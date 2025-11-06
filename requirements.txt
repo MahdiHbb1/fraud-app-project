@@ -1,0 +1,8 @@
+﻿streamlit
+pandas
+numpy
+scikit-learn
+joblib
+plotly
+imbalanced-learn
+openpyxl
