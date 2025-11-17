@@ -947,13 +947,11 @@ if page == '📊 Dashboard & Model Performance':
             gridwidth=1,
             gridcolor='#E5E7EB'
         )
-    )
-    
-    st.plotly_chart(fig, use_container_width=True)
-    
-    st.markdown("<div style='margin: 2rem 0;'></div>", unsafe_allow_html=True)
-    
-    # Insights Section
+        )
+        
+        st.plotly_chart(fig, width="stretch")
+        
+        st.markdown("<div style='margin: 2rem 0;'></div>", unsafe_allow_html=True)    # Insights Section
     st.markdown("""
     <div style='background: linear-gradient(135deg, #FEF3C7 0%, #FDE68A 100%); padding: 1.5rem; border-radius: 12px; border-left: 5px solid #F59E0B;'>
         <h3 style='color: #92400E; margin: 0;'>💡 Key Insights & Strategic Recommendations</h3>
@@ -1111,8 +1109,7 @@ elif page == '🔍 Real-Time Transaction Analysis':
         col1, col2, col3 = st.columns([1, 2, 1])
         with col2:
             submit_button = st.form_submit_button(
-                label='🔮 ANALYZE TRANSACTION',
-                use_container_width=True
+                label='🔮 ANALYZE TRANSACTION'
             )
     
     # Process prediction
@@ -1288,7 +1285,7 @@ elif page == '🔍 Real-Time Transaction Analysis':
                 # Processed data viewer
                 st.markdown("<div style='margin: 2rem 0;'></div>", unsafe_allow_html=True)
                 with st.expander("📋 View Detailed Processed Transaction Data"):
-                    st.dataframe(df_processed, use_container_width=True, height=300)
+                    st.dataframe(df_processed, width="stretch", height=300)
 
 # ============================================================================
 # PAGE 3: BATCH PROCESSING & REPORTS - ENHANCED UI
@@ -1330,7 +1327,7 @@ elif page == '📂 Batch Processing & Reports':
             
             # Preview
             with st.expander("👁️ Preview Data"):
-                st.dataframe(df_bank.head(10), use_container_width=True)
+                st.dataframe(df_bank.head(10), width="stretch")
                 
         except Exception as e:
             st.error(f"❌ Error loading file: {str(e)}")
@@ -1391,8 +1388,7 @@ elif page == '📂 Batch Processing & Reports':
             
             with col2:
                 process_button = st.form_submit_button(
-                    label='🚀 Process & Analyze',
-                    use_container_width=True
+                    label='🚀 Process & Analyze'
                 )
         
         if process_button:
@@ -1496,7 +1492,7 @@ elif page == '📂 Batch Processing & Reports':
                                     height=350,
                                     margin=dict(t=50, b=0, l=0, r=0)
                                 )
-                                st.plotly_chart(fig_donut, use_container_width=True)
+                                st.plotly_chart(fig_donut, width="stretch")
                             else:
                                 st.success("✅ No fraud detected!")
                         
@@ -1515,7 +1511,7 @@ elif page == '📂 Batch Processing & Reports':
                                 height=350,
                                 yaxis_title='Count'
                             )
-                            st.plotly_chart(fig_hist, use_container_width=True)
+                            st.plotly_chart(fig_hist, width="stretch")
                         
                         st.markdown("---")
                         
@@ -1558,8 +1554,7 @@ elif page == '📂 Batch Processing & Reports':
                                     label="📥 Download Fraud Cases (CSV)",
                                     data=csv_fraud,
                                     file_name=f"fraud_cases_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
-                                    mime="text/csv",
-                                    use_container_width=True
+                                    mime="text/csv"
                                 )
                             
                             with col2:
@@ -1568,8 +1563,7 @@ elif page == '📂 Batch Processing & Reports':
                                     label="📥 Download Full Report (CSV)",
                                     data=csv_all,
                                     file_name=f"full_analysis_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
-                                    mime="text/csv",
-                                    use_container_width=True
+                                    mime="text/csv"
                                 )
                             
                             with col3:
@@ -1578,8 +1572,7 @@ elif page == '📂 Batch Processing & Reports':
                                     label="📥 Download Priority List (CSV)",
                                     data=csv_priority,
                                     file_name=f"priority_actions_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
-                                    mime="text/csv",
-                                    use_container_width=True
+                                    mime="text/csv"
                                 )
                         
                         else:
@@ -1588,7 +1581,7 @@ elif page == '📂 Batch Processing & Reports':
                         
                         # Full results viewer
                         with st.expander("📋 View All Transaction Results"):
-                            st.dataframe(df_results, use_container_width=True)
+                            st.dataframe(df_results, width="stretch")
                         
                 except Exception as e:
                     st.error(f"❌ Processing error: {str(e)}")
@@ -1727,7 +1720,6 @@ elif page == '📈 Analytics & Insights':
             xaxis_title='Importance Score',
             yaxis_title='Transaction Features',
             height=450,
-            yaxis={'categoryorder':'total ascending'},
             plot_bgcolor='#F8FAFC',
             paper_bgcolor='white',
             font=dict(family='Arial', size=11, color='#1F2937'),
@@ -1738,12 +1730,13 @@ elif page == '📈 Analytics & Insights':
                 range=[0, 0.35]
             ),
             yaxis=dict(
+                categoryorder='total ascending',
                 showgrid=False
             ),
             margin=dict(l=200, r=50, t=80, b=50)
         )
         
-        st.plotly_chart(fig_importance, use_container_width=True)
+        st.plotly_chart(fig_importance, width="stretch")
         
         st.markdown("<div style='margin: 2rem 0;'></div>", unsafe_allow_html=True)
         
