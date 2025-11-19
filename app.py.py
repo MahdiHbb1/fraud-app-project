@@ -1738,15 +1738,15 @@ TRANSFER   → 4  (Fifth - Alphabetically last)
                                 box-shadow: 0 10px 15px rgba(0, 0, 0, 0.1);
                             }
                             .metric-label {
-                                font-size: 0.85rem;
-                                font-weight: 600;
-                                color: #4B5563;
+                                font-size: 0.9rem;
+                                font-weight: 700;
+                                color: #1F2937;
                                 text-transform: uppercase;
                                 letter-spacing: 0.05em;
-                                margin-bottom: 10px;
+                                margin-bottom: 12px;
                             }
                             .metric-value {
-                                font-size: 1.8rem;
+                                font-size: 2rem;
                                 font-weight: 900;
                                 margin: 0;
                                 line-height: 1.2;
@@ -1761,7 +1761,7 @@ TRANSFER   → 4  (Fifth - Alphabetically last)
                             st.markdown(f"""
                             <div class="metric-card" style="border-top: 5px solid #3B82F6;">
                                 <div class="metric-label">Total Transactions</div>
-                                <div class="metric-value" style="color: #1E40AF;">{total_transactions:,}</div>
+                                <div class="metric-value" style="color: #1E3A8A;">{total_transactions:,}</div>
                             </div>
                             """, unsafe_allow_html=True)
                         
@@ -1769,7 +1769,7 @@ TRANSFER   → 4  (Fifth - Alphabetically last)
                             st.markdown(f"""
                             <div class="metric-card" style="border-top: 5px solid #EF4444;">
                                 <div class="metric-label">Fraud Detected</div>
-                                <div class="metric-value" style="color: #DC2626;">{total_fraud:,}</div>
+                                <div class="metric-value" style="color: #991B1B;">{total_fraud:,}</div>
                             </div>
                             """, unsafe_allow_html=True)
                         
@@ -1777,7 +1777,7 @@ TRANSFER   → 4  (Fifth - Alphabetically last)
                             st.markdown(f"""
                             <div class="metric-card" style="border-top: 5px solid #F59E0B;">
                                 <div class="metric-label">Fraud Rate</div>
-                                <div class="metric-value" style="color: #B45309;">{fraud_rate:.2f}%</div>
+                                <div class="metric-value" style="color: #92400E;">{fraud_rate:.2f}%</div>
                             </div>
                             """, unsafe_allow_html=True)
                         
@@ -1786,7 +1786,7 @@ TRANSFER   → 4  (Fifth - Alphabetically last)
                             st.markdown(f"""
                             <div class="metric-card" style="border-top: 5px solid #F97316;">
                                 <div class="metric-label">Potential Loss</div>
-                                <div class="metric-value" style="color: #C2410C;">{formatted_loss}</div>
+                                <div class="metric-value" style="color: #9A3412;">{formatted_loss}</div>
                             </div>
                             """, unsafe_allow_html=True)
                         
@@ -1795,7 +1795,7 @@ TRANSFER   → 4  (Fifth - Alphabetically last)
                             st.markdown(f"""
                             <div class="metric-card" style="border-top: 5px solid #8B5CF6;">
                                 <div class="metric-label">Avg Fraud Amount</div>
-                                <div class="metric-value" style="color: #6D28D9;">{formatted_avg}</div>
+                                <div class="metric-value" style="color: #5B21B6;">{formatted_avg}</div>
                             </div>
                             """, unsafe_allow_html=True)
                         
@@ -1820,7 +1820,7 @@ TRANSFER   → 4  (Fifth - Alphabetically last)
                                 st.markdown(f"""
                                 <div class="metric-card" style="border-top: 5px solid #10B981;">
                                     <div class="metric-label">Accuracy</div>
-                                    <div class="metric-value" style="color: #059669;">{accuracy:.2f}%</div>
+                                    <div class="metric-value" style="color: #065F46;">{accuracy:.2f}%</div>
                                 </div>
                                 """, unsafe_allow_html=True)
                             
@@ -1828,7 +1828,7 @@ TRANSFER   → 4  (Fifth - Alphabetically last)
                                 st.markdown(f"""
                                 <div class="metric-card" style="border-top: 5px solid #3B82F6;">
                                     <div class="metric-label">Precision</div>
-                                    <div class="metric-value" style="color: #2563EB;">{precision:.2f}%</div>
+                                    <div class="metric-value" style="color: #1E40AF;">{precision:.2f}%</div>
                                 </div>
                                 """, unsafe_allow_html=True)
                             
@@ -1836,7 +1836,7 @@ TRANSFER   → 4  (Fifth - Alphabetically last)
                                 st.markdown(f"""
                                 <div class="metric-card" style="border-top: 5px solid #F59E0B;">
                                     <div class="metric-label">Recall</div>
-                                    <div class="metric-value" style="color: #D97706;">{recall:.2f}%</div>
+                                    <div class="metric-value" style="color: #92400E;">{recall:.2f}%</div>
                                 </div>
                                 """, unsafe_allow_html=True)
                             
@@ -1844,7 +1844,7 @@ TRANSFER   → 4  (Fifth - Alphabetically last)
                                 st.markdown(f"""
                                 <div class="metric-card" style="border-top: 5px solid #8B5CF6;">
                                     <div class="metric-label">F1-Score</div>
-                                    <div class="metric-value" style="color: #7C3AED;">{f1:.2f}%</div>
+                                    <div class="metric-value" style="color: #5B21B6;">{f1:.2f}%</div>
                                 </div>
                                 """, unsafe_allow_html=True)
                             
@@ -1854,6 +1854,28 @@ TRANSFER   → 4  (Fifth - Alphabetically last)
                                 st.warning(f"⚠️ Good performance at {accuracy:.2f}%, but below 85% target")
                             else:
                                 st.error(f"❌ Performance needs improvement: {accuracy:.2f}% (Target: 85%+)")
+                            
+                            # Add debugging info to help diagnose accuracy issues
+                            with st.expander("🔧 Accuracy Debugging Information"):
+                                st.write("**Ground Truth Distribution:**")
+                                st.write(y_true.value_counts())
+                                st.write("")
+                                st.write("**Prediction Distribution:**")
+                                st.write(y_pred.value_counts())
+                                st.write("")
+                                st.write("**Confusion Matrix:**")
+                                from sklearn.metrics import confusion_matrix
+                                cm = confusion_matrix(y_true, y_pred)
+                                st.write(f"True Negatives: {cm[0,0]}, False Positives: {cm[0,1]}")
+                                st.write(f"False Negatives: {cm[1,0]}, True Positives: {cm[1,1]}")
+                                st.write("")
+                                st.write("**Sample Predictions vs Ground Truth (first 20):**")
+                                comparison_df = pd.DataFrame({
+                                    'Ground Truth': y_true.head(20),
+                                    'Prediction': y_pred.head(20),
+                                    'Match': (y_true.head(20) == y_pred.head(20)).map({True: '✅', False: '❌'})
+                                })
+                                st.dataframe(comparison_df)
                         
                         st.markdown("---")
                         
@@ -1904,13 +1926,17 @@ TRANSFER   → 4  (Fifth - Alphabetically last)
                         st.write("High-risk transactions requiring immediate investigation")
                         
                         if not df_fraud.empty:
-                            # Filter critical and high risk
-                            df_priority = df_fraud[
-                                df_fraud['Risk_Level'].isin(['CRITICAL', 'HIGH'])
-                            ].head(20)
+                            # Show ALL fraud cases, not just CRITICAL/HIGH
+                            df_priority = df_fraud.head(20)
                             
-                            # Use standardized column names from cleaned data
-                            display_cols = ['Risk_Level', 'Fraud_Probability', 'type', 'amount', 'oldbalanceOrg', 'newbalanceOrig', 'oldbalanceDest', 'newbalanceDest']
+                            # Build display columns dynamically based on what exists
+                            display_cols = ['Risk_Level', 'Fraud_Probability']
+                            
+                            # Add columns if they exist in df_priority
+                            optional_cols = ['type', 'amount', 'oldbalanceOrg', 'newbalanceOrig', 'oldbalanceDest', 'newbalanceDest', 'nameOrig', 'nameDest']
+                            for col in optional_cols:
+                                if col in df_priority.columns:
+                                    display_cols.append(col)
                             
                             # Color code by risk
                             def highlight_risk(row):
