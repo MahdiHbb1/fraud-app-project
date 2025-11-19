@@ -1809,7 +1809,9 @@ elif page == '📈 Analytics & Insights':
 # ============================================================================
 
 st.divider()
-st.markdown("<div style='margin: 2rem 0;'></div>", unsafe_allow_html=True)st.markdown("""
+st.markdown("<div style='margin: 2rem 0;'></div>", unsafe_allow_html=True)
+
+st.markdown("""
 <div style='background: linear-gradient(135deg, #002B5B 0%, #1E3A8A 100%); padding: 2.5rem; border-radius: 12px; box-shadow: 0 8px 16px rgba(0,0,0,0.2); text-align: center;'>
     <div style='margin-bottom: 1.5rem;'>
         <h2 style='color: #14B8A6; margin: 0; font-size: 1.75rem; font-weight: 800;'>🛡️ Banking Fraud Detection System</h2>
