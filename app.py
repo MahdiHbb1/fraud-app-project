@@ -721,24 +721,29 @@ def clean_and_prepare_data(df):
     else:
         df['errorBalanceDest'] = 0
     
-    # 4. Robust Type Mapping (String to Integer)
-    # Only map if column is string/object. If already int, keep as is.
+    # 4. ALPHABETICAL LABEL ENCODING (CRITICAL - Must match sklearn LabelEncoder)
+    # This matches sklearn.preprocessing.LabelEncoder default behavior (alphabetical sorting)
+    # CRITICAL: Type encoding MUST match training phase:
+    #   CASH_IN: 0, CASH_OUT: 1, DEBIT: 2, PAYMENT: 3, TRANSFER: 4
     if 'type' in df.columns:
         if df['type'].dtype == 'object':
-            # String values - apply mapping with case-insensitive matching
+            # Standard alphabetical encoding (sklearn default)
             type_map = {
-                'PAYMENT': 0,
-                'TRANSFER': 1,
-                'CASH_OUT': 2,
-                'DEBIT': 3,
-                'CASH_IN': 4
+                'CASH_IN': 0,      # Alphabetically first
+                'CASH_OUT': 1,     # Second
+                'DEBIT': 2,        # Third
+                'PAYMENT': 3,      # Fourth
+                'TRANSFER': 4      # Fifth
             }
-            # Convert to uppercase for consistent mapping
-            df['type'] = df['type'].str.upper() if df['type'].dtype == 'object' else df['type']
-            df['type'] = df['type'].map(type_map).fillna(0).astype(int)
+            
+            # Convert to uppercase for case-insensitive matching
+            df['type'] = df['type'].str.upper().str.strip()
+            
+            # Map with safe default (PAYMENT=3 is most common transaction type)
+            df['type'] = df['type'].map(type_map).fillna(3).astype(int)
         else:
             # Already numeric, ensure integer type
-            df['type'] = df['type'].fillna(0).astype(int)
+            df['type'] = df['type'].fillna(3).astype(int)
     
     return df
 
@@ -1467,12 +1472,31 @@ elif page == '📂 Batch Processing & Reports':
                         st.write("**Standardized Columns:**")
                         st.code('\n'.join(df_bank.columns[:15]))
             
-            # Show feature engineering info
-            with st.expander("✨ Feature Engineering Applied"):
+            # Show feature engineering info with CORRECT encoding
+            with st.expander("✨ Feature Engineering & Encoding Applied"):
                 st.write("**Engineered Features:**")
                 st.write("- `errorBalanceOrig`: Captures balance discrepancy for origin account")
                 st.write("- `errorBalanceDest`: Captures balance discrepancy for destination account")
-                st.write("- `type`: Converted to numeric encoding (0=PAYMENT, 1=TRANSFER, 2=CASH_OUT, 3=DEBIT, 4=CASH_IN)")
+                st.write("")
+                st.write("**Transaction Type Encoding (Alphabetical Order):**")
+                st.code("""
+CASH_IN    → 0
+CASH_OUT   → 1
+DEBIT      → 2
+PAYMENT    → 3
+TRANSFER   → 4
+                """)
+                st.caption("⚠️ This encoding matches sklearn LabelEncoder default behavior")
+                
+                # Verify encoding in uploaded data
+                if 'type' in df_bank.columns:
+                    type_dist = df_bank['type'].value_counts().sort_index()
+                    type_labels = {0: 'CASH_IN', 1: 'CASH_OUT', 2: 'DEBIT', 3: 'PAYMENT', 4: 'TRANSFER'}
+                    st.write("")
+                    st.write("**Type Distribution in Your Data:**")
+                    for idx, count in type_dist.items():
+                        st.write(f"  • {type_labels.get(idx, f'Unknown({idx})')}: {count} transactions")
+
             
             st.session_state['df_bank'] = df_bank
             
@@ -1516,6 +1540,7 @@ elif page == '📂 Batch Processing & Reports':
             with st.spinner("⚙️ Processing batch data..."):
                 try:
                     # Define exact feature columns required by model (CRITICAL ORDER)
+                    # DO NOT include 'nameOrig', 'nameDest', or 'isFraud' in features
                     feature_cols = [
                         'step',
                         'type',
@@ -1528,16 +1553,40 @@ elif page == '📂 Batch Processing & Reports':
                         'errorBalanceDest'
                     ]
                     
-                    # Verify all required columns exist
+                    # Use reindex to ensure exact column order and handle missing columns (fill with 0)
+                    X_input = df_bank.reindex(columns=feature_cols, fill_value=0)
+                    
+                    # Validation checks
                     missing_cols = [col for col in feature_cols if col not in df_bank.columns]
                     if missing_cols:
-                        st.error(f"❌ Missing required columns: {missing_cols}")
-                        st.info("The uploaded file may be in an unsupported format.")
+                        st.warning(f"⚠️ Missing columns (filled with 0): {missing_cols}")
                     
-                    # Extract feature matrix X (data already cleaned and engineered)
-                    df_mapped = df_bank[feature_cols].copy()
+                    # Verify type encoding is correct
+                    if 'type' in X_input.columns:
+                        unique_types = X_input['type'].unique()
+                        if not all(t in [0, 1, 2, 3, 4] for t in unique_types):
+                            st.error(f"❌ Invalid type encoding detected: {unique_types}")
+                            st.error("Expected values: 0 (CASH_IN), 1 (CASH_OUT), 2 (DEBIT), 3 (PAYMENT), 4 (TRANSFER)")
+                            st.stop()
+                        else:
+                            type_counts = X_input['type'].value_counts().sort_index()
+                            st.success(f"✅ Type encoding verified: {dict(type_counts)}")
                     
-                    # Rename oldbalanceOrg to oldbalanceOrig for consistency with preprocessing
+                    # Debug view of model input
+                    with st.expander("🔍 Debug: Model Input (Technical View)"):
+                        st.write(f"**Input Shape:** {X_input.shape} (Expected: {len(X_input)} rows × 9 features)")
+                        st.write(f"**Columns:** {list(X_input.columns)}")
+                        st.dataframe(X_input.head(10), use_container_width=True)
+                        st.write("**Type Distribution in Model Input:**")
+                        type_dist = X_input['type'].value_counts().sort_index()
+                        type_labels = {0: 'CASH_IN', 1: 'CASH_OUT', 2: 'DEBIT', 3: 'PAYMENT', 4: 'TRANSFER'}
+                        for idx, count in type_dist.items():
+                            st.write(f"  {type_labels.get(idx, f'Unknown({idx})')}: {count}")
+                    
+                    # Prepare for existing preprocessing function
+                    df_mapped = X_input.copy()
+                    
+                    # Rename oldbalanceOrg to oldbalanceOrig for consistency
                     df_mapped = df_mapped.rename(columns={'oldbalanceOrg': 'oldbalanceOrig'})
                     
                     X_scaled, df_processed = preprocess_data_mapped(
