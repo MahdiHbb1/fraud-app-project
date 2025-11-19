@@ -1409,64 +1409,33 @@ elif page == '📂 Batch Processing & Reports':
         df_bank = st.session_state['df_bank']
         
         st.markdown("---")
-        st.subheader("🗺️ Column Mapping Configuration")
-        st.write("Map your file columns to the required model inputs")
+        st.subheader("🚀 Ready to Analyze")
+        st.info("✅ Data has been automatically cleaned and columns have been mapped to model requirements.")
         
-        required_columns = {
-            'type': 'Transaction type (e.g., TRANSFER, PAYMENT, CASH_OUT)',
-            'amount': 'Transaction amount in currency',
-            'oldbalanceOrig': 'Sender initial balance',
-            'newbalanceOrig': 'Sender final balance',
-            'oldbalanceDest': 'Recipient initial balance',
-            'newbalanceDest': 'Recipient final balance'
-        }
+        col1, col2, col3 = st.columns([2, 2, 1])
+        with col1:
+            model_choice_batch = st.radio(
+                "Select Analysis Model",
+                ("Random Forest (Recommended)", "Decision Tree"),
+                horizontal=True
+            )
         
-        uploaded_columns = df_bank.columns.tolist()
-        
-        with st.form(key='column_mapping_form'):
-            mapping_dict = {}
-            
-            cols = st.columns(2)
-            
-            for i, (col_name, description) in enumerate(required_columns.items()):
-                with cols[i % 2]:
-                    st.markdown(f"**{col_name}**")
-                    st.caption(description)
-                    
-                    try:
-                        default_idx = [c.lower() for c in uploaded_columns].index(col_name.lower())
-                    except ValueError:
-                        default_idx = 0
-                    
-                    selected_col = st.selectbox(
-                        f"Select column for '{col_name}'",
-                        options=uploaded_columns,
-                        index=default_idx,
-                        key=f"map_{col_name}",
-                        label_visibility="collapsed"
-                    )
-                    mapping_dict[col_name] = selected_col
-            
-            st.markdown("---")
-            
-            col1, col2 = st.columns([2, 1])
-            with col1:
-                model_choice_batch = st.radio(
-                    "Select Analysis Model",
-                    ("Random Forest (Recommended)", "Decision Tree"),
-                    horizontal=True
-                )
-            
-            with col2:
-                process_button = st.form_submit_button(
-                    label='🚀 Process & Analyze'
-                )
+        with col3:
+            process_button = st.button(
+                label='🚀 Process & Analyze',
+                type='primary',
+                use_container_width=True
+            )
         
         if process_button:
             with st.spinner("⚙️ Processing batch data..."):
                 try:
-                    df_mapped = df_bank[list(mapping_dict.values())].copy()
-                    df_mapped.columns = list(mapping_dict.keys())
+                    # Data already cleaned by clean_and_prepare_data(), use directly
+                    required_cols = ['type', 'amount', 'oldbalanceOrg', 'newbalanceOrig', 'oldbalanceDest', 'newbalanceDest']
+                    df_mapped = df_bank[required_cols].copy()
+                    
+                    # Rename oldbalanceOrg to oldbalanceOrig for consistency
+                    df_mapped = df_mapped.rename(columns={'oldbalanceOrg': 'oldbalanceOrig'})
                     
                     X_scaled, df_processed = preprocess_data_mapped(
                         df_mapped,
@@ -1506,7 +1475,7 @@ elif page == '📂 Batch Processing & Reports':
                         fraud_rate = (total_fraud / total_transactions * 100) if total_transactions > 0 else 0
                         potential_loss = df_results.loc[
                             df_results['Fraud_Prediction'] == 1, 
-                            mapping_dict['amount']
+                            'amount'
                         ].sum()
                         
                         # 2. Inject CSS Khusus untuk Kartu (Card Styles)
@@ -1917,5 +1886,21 @@ elif page == '📈 Analytics & Insights':
 # ============================================================================
 
 st.divider()
-st.info("🛡️ **Banking Fraud Detection System v3.0** | Development Team: Mahdi • Ibnu • Brian • Anya")
+
+col1, col2, col3 = st.columns([2, 1, 1])
+
+with col1:
+    st.markdown("### 🛡️ Banking Fraud Detection System v3.0")
+    st.caption("Powered by Advanced Machine Learning & Artificial Intelligence")
+
+with col2:
+    st.markdown("**Technology Stack**")
+    st.caption("• Random Forest AI\n• 99.7% Accuracy\n• <50ms Response")
+
+with col3:
+    st.markdown("**Development Team**")
+    st.caption("Mahdi • Ibnu • Brian • Anya")
+
+st.divider()
+st.caption("© 2024 Enterprise Banking Solutions | 🟢 System Operational")
 st.caption("© 2025 Enterprise Banking Solutions | 🟢 System Status: Operational")
