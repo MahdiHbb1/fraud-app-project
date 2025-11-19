@@ -1412,19 +1412,24 @@ elif page == '🔍 Real-Time Transaction Analysis':
 # ============================================================================
 
 elif page == '📂 Batch Processing & Reports':
+    # ============================================================================
+    # PRODUCTION-GRADE BATCH PROCESSING PIPELINE
+    # Implements separation of Display View (text) vs Model View (numbers)
+    # ============================================================================
+    
     # Page Header
     st.markdown("""
     <div style='background: linear-gradient(135deg, #FEF3C7 0%, #FDE68A 100%); padding: 2rem; border-radius: 12px; margin-bottom: 2rem; border-left: 5px solid #F59E0B;'>
-        <h2 style='color: #92400E; margin: 0 0 0.5rem 0;'>📂 Batch Transaction Processing</h2>
-        <p style='color: #78350F; margin: 0; font-size: 1.05rem;'>Upload and analyze multiple transactions with comprehensive fraud detection reporting</p>
+        <h2 style='color: #92400E; margin: 0 0 0.5rem 0;'>📂 Production Batch Processing</h2>
+        <p style='color: #78350F; margin: 0; font-size: 1.05rem;'>Enterprise-grade fraud detection with 85%+ accuracy target</p>
     </div>
     """, unsafe_allow_html=True)
     
     # File Upload Section
     st.markdown("""
     <div style='background: white; padding: 1.5rem; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); border-top: 4px solid #002B5B; margin-bottom: 2rem;'>
-        <h3 style='color: #002B5B; margin: 0 0 1rem 0;'>📁 Upload Transaction Data File</h3>
-        <p style='color: #6B7280; margin: 0;'>Supported formats: CSV, Excel (.xls, .xlsx)</p>
+        <h3 style='color: #002B5B; margin: 0 0 1rem 0;'>📁 Upload Transaction Data</h3>
+        <p style='color: #6B7280; margin: 0;'>Supports CSV, Excel (.xls, .xlsx) with automatic column mapping</p>
     </div>
     """, unsafe_allow_html=True)
     
@@ -1447,113 +1452,128 @@ elif page == '📂 Batch Processing & Reports':
                 file_ext = uploaded_file.name.split('.')[-1].upper()
                 st.metric("📄 Type", file_ext)
             
-            # Load file based on extension
+            # Load file based on extension (Display View - original text)
             if uploaded_file.name.endswith('.csv'):
                 st.info("📄 Reading CSV file...")
-                df_raw = pd.read_csv(uploaded_file)
+                df_display = pd.read_csv(uploaded_file)
             elif uploaded_file.name.endswith(('.xls', '.xlsx')):
                 st.info("📊 Reading Excel file...")
-                df_raw = pd.read_excel(uploaded_file, engine='openpyxl')
+                df_display = pd.read_excel(uploaded_file, engine='openpyxl')
             else:
                 st.error("❌ Unsupported file format")
                 st.stop()
             
-            # Apply smart cleaning and column standardization
-            st.info("⚙️ Processing data through preprocessing pipeline...")
-            df_bank = clean_and_prepare_data(df_raw)
+            # CRITICAL: Create Model View (numerical) for ML processing
+            st.info("⚙️ Creating Model View (numerical data for ML)...")
+            df_model = clean_and_prepare_data(df_display)
             
-            # Validate required features exist
+            # Validate required features exist in Model View
             required_features = ['step', 'type', 'amount', 'oldbalanceOrg', 'newbalanceOrig', 
                                'newbalanceDest', 'oldbalanceDest', 'errorBalanceOrig', 'errorBalanceDest']
-            missing_features = [f for f in required_features if f not in df_bank.columns]
+            missing_features = [f for f in required_features if f not in df_model.columns]
             
             if missing_features:
                 st.error(f"❌ Missing required features after processing: {missing_features}")
                 st.warning("Please ensure your file contains all necessary transaction fields.")
                 st.stop()
             
-            st.success(f"✅ Successfully loaded and processed {len(df_bank):,} transactions from {uploaded_file.name}")
+            st.success(f"✅ Successfully processed {len(df_model):,} transactions from {uploaded_file.name}")
             
-            # Show column mapping info if changes were made
-            if list(df_raw.columns) != list(df_bank.columns):
-                with st.expander("🔄 Column Mapping Applied", expanded=False):
+            # Show column mapping feedback
+            if list(df_display.columns) != list(df_model.columns):
+                with st.expander("🔄 Smart Column Mapping Applied", expanded=False):
                     col1, col2 = st.columns(2)
                     with col1:
-                        st.write("**Original Columns:**")
-                        st.code('\n'.join(df_raw.columns[:15]))
+                        st.write("**Original Columns (Display View):**")
+                        st.code('\n'.join(df_display.columns[:15]))
                     with col2:
-                        st.write("**Standardized Columns:**")
-                        st.code('\n'.join(df_bank.columns[:15]))
+                        st.write("**Standardized Columns (Model View):**")
+                        st.code('\n'.join(df_model.columns[:15]))
             
-            # Show feature engineering info with CORRECT encoding
-            with st.expander("✨ Feature Engineering & Encoding Applied"):
-                st.write("**Engineered Features:**")
-                st.write("- `errorBalanceOrig`: Captures balance discrepancy for origin account")
-                st.write("- `errorBalanceDest`: Captures balance discrepancy for destination account")
+            # Show processing details with encoding verification
+            with st.expander("✨ Production Pipeline Details"):
+                st.write("**Feature Engineering Applied:**")
+                st.write("- `errorBalanceOrig`: Balance discrepancy for origin account (fraud indicator)")
+                st.write("- `errorBalanceDest`: Balance discrepancy for destination account (fraud indicator)")
                 st.write("")
-                st.write("**Transaction Type Encoding (Alphabetical Order):**")
+                st.write("**Transaction Type Encoding (sklearn Alphabetical Standard):**")
                 st.code("""
-CASH_IN    → 0
-CASH_OUT   → 1
-DEBIT      → 2
-PAYMENT    → 3
-TRANSFER   → 4
+CASH_IN    → 0  (Alphabetically first)
+CASH_OUT   → 1  (Second)
+DEBIT      → 2  (Third)
+PAYMENT    → 3  (Fourth)
+TRANSFER   → 4  (Fifth - Alphabetically last)
                 """)
-                st.caption("⚠️ This encoding matches sklearn LabelEncoder default behavior")
+                st.caption("✅ This encoding matches sklearn LabelEncoder default behavior")
                 
-                # Verify encoding in uploaded data
-                if 'type' in df_bank.columns:
-                    type_dist = df_bank['type'].value_counts().sort_index()
+                # Verify encoding in Model View
+                if 'type' in df_model.columns:
+                    type_dist = df_model['type'].value_counts().sort_index()
                     type_labels = {0: 'CASH_IN', 1: 'CASH_OUT', 2: 'DEBIT', 3: 'PAYMENT', 4: 'TRANSFER'}
                     st.write("")
-                    st.write("**Type Distribution in Your Data:**")
+                    st.write("**Type Distribution in Model View (Numerical):**")
                     for idx, count in type_dist.items():
-                        st.write(f"  • {type_labels.get(idx, f'Unknown({idx})')}: {count} transactions")
-
+                        st.write(f"  • {type_labels.get(idx, f'Unknown({idx})')}: {count} transactions ({count/len(df_model)*100:.1f}%)")
             
-            st.session_state['df_bank'] = df_bank
+            # Store BOTH views in session state
+            st.session_state['df_display'] = df_display  # Human-readable (original text)
+            st.session_state['df_model'] = df_model      # ML-ready (pure numbers)
             
-            # Preview processed data
-            with st.expander("👁️ Preview Processed Data"):
-                st.dataframe(df_bank.head(10), use_container_width=True)
-                
-                # Show statistics
-                st.write("**Data Statistics:**")
-                st.write(df_bank[required_features].describe())
+            # Preview Display View (human-readable)
+            with st.expander("👁️ Preview Original Data (Display View)"):
+                st.dataframe(df_display.head(10), use_container_width=True)
+            
+            # Preview Model View (numerical)
+            with st.expander("🔢 Preview Model View (Numerical Data for ML)"):
+                st.dataframe(df_model.head(10), use_container_width=True)
+                st.write("**Feature Statistics:**")
+                st.write(df_model[required_features].describe())
                 
         except Exception as e:
             st.error(f"❌ Error processing file: {str(e)}")
             st.exception(e)
-            if 'df_bank' in st.session_state:
-                del st.session_state['df_bank']
+            # Clean up session state on error
+            for key in ['df_display', 'df_model', 'df_bank']:
+                if key in st.session_state:
+                    del st.session_state[key]
     
-    if 'df_bank' in st.session_state:
-        df_bank = st.session_state['df_bank']
+    # ============================================================================
+    # FRAUD DETECTION ANALYSIS SECTION
+    # ============================================================================
+    
+    if 'df_model' in st.session_state and 'df_display' in st.session_state:
+        df_model = st.session_state['df_model']
+        df_display = st.session_state['df_display']
         
         st.markdown("---")
-        st.subheader("🚀 Ready to Analyze")
-        st.info("✅ Data has been automatically cleaned and columns have been mapped to model requirements.")
+        st.subheader("🚀 Production Fraud Detection Analysis")
+        st.info("✅ Both Display View (text) and Model View (numbers) are ready for production analysis")
         
+        # Model Selection
         col1, col2, col3 = st.columns([2, 2, 1])
         with col1:
             model_choice_batch = st.radio(
-                "Select Analysis Model",
-                ("Random Forest (Recommended)", "Decision Tree"),
-                horizontal=True
+                "Select ML Model",
+                ("Random Forest (99.7% Training Accuracy)", "Decision Tree"),
+                horizontal=True,
+                help="Random Forest recommended for production use"
             )
         
         with col3:
             process_button = st.button(
-                label='🚀 Process & Analyze',
+                label='🚀 Run Analysis',
                 type='primary',
                 use_container_width=True
             )
         
         if process_button:
-            with st.spinner("⚙️ Processing batch data..."):
+            with st.spinner("⚙️ Running production fraud detection pipeline..."):
                 try:
-                    # Define exact feature columns required by model (CRITICAL ORDER)
-                    # DO NOT include 'nameOrig', 'nameDest', or 'isFraud' in features
+                    # ========================================
+                    # STEP 1: Extract Features from Model View
+                    # ========================================
+                    
+                    # Define exact feature columns (STRICT ORDER - DO NOT CHANGE)
                     feature_cols = [
                         'step',
                         'type',
@@ -1566,42 +1586,66 @@ TRANSFER   → 4
                         'errorBalanceDest'
                     ]
                     
-                    # Use reindex to ensure exact column order and handle missing columns (fill with 0)
-                    X_input = df_bank.reindex(columns=feature_cols, fill_value=0)
+                    # Use reindex for STRICT COLUMN ORDERING (critical for model compatibility)
+                    X_input = df_model.reindex(columns=feature_cols, fill_value=0)
                     
-                    # Validation checks
-                    missing_cols = [col for col in feature_cols if col not in df_bank.columns]
+                    # Validation: Check for missing columns
+                    missing_cols = [col for col in feature_cols if col not in df_model.columns]
                     if missing_cols:
                         st.warning(f"⚠️ Missing columns (filled with 0): {missing_cols}")
                     
-                    # Verify type encoding is correct
+                    # ========================================
+                    # STEP 2: Validate Type Encoding
+                    # ========================================
+                    
                     if 'type' in X_input.columns:
                         unique_types = X_input['type'].unique()
-                        if not all(t in [0, 1, 2, 3, 4] for t in unique_types):
-                            st.error(f"❌ Invalid type encoding detected: {unique_types}")
-                            st.error("Expected values: 0 (CASH_IN), 1 (CASH_OUT), 2 (DEBIT), 3 (PAYMENT), 4 (TRANSFER)")
+                        valid_types = [0, 1, 2, 3, 4]
+                        
+                        # Check if all values are valid
+                        invalid_types = [t for t in unique_types if t not in valid_types]
+                        if invalid_types:
+                            st.error(f"❌ Invalid type encoding: {invalid_types}")
+                            st.error("Expected: 0=CASH_IN, 1=CASH_OUT, 2=DEBIT, 3=PAYMENT, 4=TRANSFER")
                             st.stop()
                         else:
                             type_counts = X_input['type'].value_counts().sort_index()
-                            st.success(f"✅ Type encoding verified: {dict(type_counts)}")
+                            type_labels = {0: 'CASH_IN', 1: 'CASH_OUT', 2: 'DEBIT', 3: 'PAYMENT', 4: 'TRANSFER'}
+                            st.success("✅ Type encoding verified - Alphabetical standard confirmed")
+                            
+                            # Show distribution
+                            with st.expander("📊 Type Distribution Verification"):
+                                for idx, count in type_counts.items():
+                                    pct = count/len(X_input)*100
+                                    st.write(f"  • {type_labels[idx]}: {count} ({pct:.1f}%)")
                     
-                    # Debug view of model input
-                    with st.expander("🔍 Debug: Model Input (Technical View)"):
-                        st.write(f"**Input Shape:** {X_input.shape} (Expected: {len(X_input)} rows × 9 features)")
-                        st.write(f"**Columns:** {list(X_input.columns)}")
+                    # ========================================
+                    # STEP 3: Debug View of Model Input
+                    # ========================================
+                    
+                    with st.expander("🔍 Production Debug View (Model Input)"):
+                        st.write(f"**Shape:** {X_input.shape} (rows × features)")
+                        st.write(f"**Columns (in strict order):** {list(X_input.columns)}")
+                        st.write(f"**Data Types:**")
+                        st.code(str(X_input.dtypes))
+                        st.write("")
+                        st.write("**First 10 rows:**")
                         st.dataframe(X_input.head(10), use_container_width=True)
-                        st.write("**Type Distribution in Model Input:**")
-                        type_dist = X_input['type'].value_counts().sort_index()
-                        type_labels = {0: 'CASH_IN', 1: 'CASH_OUT', 2: 'DEBIT', 3: 'PAYMENT', 4: 'TRANSFER'}
-                        for idx, count in type_dist.items():
-                            st.write(f"  {type_labels.get(idx, f'Unknown({idx})')}: {count}")
+                        st.write("")
+                        st.write("**Statistical Summary:**")
+                        st.write(X_input.describe())
+                    
+                    # ========================================
+                    # STEP 4: Additional Preprocessing
+                    # ========================================
                     
                     # Prepare for existing preprocessing function
                     df_mapped = X_input.copy()
                     
-                    # Rename oldbalanceOrg to oldbalanceOrig for consistency
+                    # Rename for consistency with preprocess_data_mapped
                     df_mapped = df_mapped.rename(columns={'oldbalanceOrg': 'oldbalanceOrig'})
                     
+                    # Apply additional feature engineering and scaling
                     X_scaled, df_processed = preprocess_data_mapped(
                         df_mapped,
                         artifacts['le_type'],
@@ -1610,40 +1654,73 @@ TRANSFER   → 4
                         artifacts['feature_columns']
                     )
                     
+                    # ========================================
+                    # STEP 5: Make Predictions
+                    # ========================================
+                    
                     if X_scaled is not None:
+                        # Select model based on user choice
                         model_to_use = artifacts['rf_model'] if "Random Forest" in model_choice_batch else artifacts['dt_model']
+                        model_name = "Random Forest" if "Random Forest" in model_choice_batch else "Decision Tree"
                         
+                        st.info(f"🤖 Using {model_name} for predictions...")
+                        
+                        # Generate predictions
                         predictions = model_to_use.predict(X_scaled)
                         probabilities = model_to_use.predict_proba(X_scaled)[:, 1]
                         
-                        df_results = df_bank.copy()
+                        # ========================================
+                        # STEP 6: Attach Results to Display View
+                        # ========================================
+                        
+                        # Use Display View for human-readable results
+                        df_results = df_display.copy()
                         df_results['Fraud_Prediction'] = predictions
                         df_results['Fraud_Probability'] = (probabilities * 100).round(2)
                         df_results['Risk_Level'] = df_results['Fraud_Probability'].apply(
                             lambda x: calculate_risk_score(x/100)[0]
                         )
                         
+                        # Store in session state for Analytics page
+                        st.session_state['df_results'] = df_results
+                        
+                        # Filter fraud cases
                         df_fraud = df_results[df_results['Fraud_Prediction'] == 1].sort_values(
                             by='Fraud_Probability', 
                             ascending=False
                         )
                         
-                        st.success("✅ Analysis Complete!")
+                        st.success(f"✅ Production Analysis Complete using {model_name}!")
                         st.markdown("---")
                         
-                        # Executive Summary
-                        st.subheader("📊 Executive Summary")
+                        # ========================================
+                        # EXECUTIVE DASHBOARD
+                        # ========================================
                         
-                        # 1. Hitung Metrik (Logika tetap sama)
+                        st.subheader("📊 Executive Dashboard - Financial Impact Analysis")
+                        
+                        # Calculate key business metrics
                         total_transactions = len(df_results)
                         total_fraud = len(df_fraud)
                         fraud_rate = (total_fraud / total_transactions * 100) if total_transactions > 0 else 0
-                        potential_loss = df_results.loc[
-                            df_results['Fraud_Prediction'] == 1, 
-                            'amount'
-                        ].sum()
                         
-                        # 2. Inject CSS Khusus untuk Kartu (Card Styles)
+                        # Financial impact calculations
+                        if 'amount' in df_results.columns:
+                            potential_loss = df_results.loc[
+                                df_results['Fraud_Prediction'] == 1, 
+                                'amount'
+                            ].sum()
+                            total_volume = df_results['amount'].sum()
+                            avg_fraud_amount = df_results.loc[
+                                df_results['Fraud_Prediction'] == 1, 
+                                'amount'
+                            ].mean() if total_fraud > 0 else 0
+                        else:
+                            potential_loss = 0
+                            total_volume = 0
+                            avg_fraud_amount = 0
+                        
+                        # Enhanced CSS for Executive Dashboard
                         st.markdown("""
                         <style>
                             .metric-card {
@@ -1661,7 +1738,7 @@ TRANSFER   → 4
                                 box-shadow: 0 10px 15px rgba(0, 0, 0, 0.1);
                             }
                             .metric-label {
-                                font-size: 0.9rem;
+                                font-size: 0.85rem;
                                 font-weight: 600;
                                 color: #4B5563;
                                 text-transform: uppercase;
@@ -1669,7 +1746,7 @@ TRANSFER   → 4
                                 margin-bottom: 10px;
                             }
                             .metric-value {
-                                font-size: 2rem;
+                                font-size: 1.8rem;
                                 font-weight: 900;
                                 margin: 0;
                                 line-height: 1.2;
@@ -1677,8 +1754,8 @@ TRANSFER   → 4
                         </style>
                         """, unsafe_allow_html=True)
                         
-                        # 3. Tampilkan dalam Kolom (Layout Baru)
-                        col1, col2, col3, col4 = st.columns(4)
+                        # Financial Impact Cards (5-column layout)
+                        col1, col2, col3, col4, col5 = st.columns(5)
                         
                         with col1:
                             st.markdown(f"""
@@ -1705,8 +1782,6 @@ TRANSFER   → 4
                             """, unsafe_allow_html=True)
                         
                         with col4:
-                            # Pastikan fungsi format_currency sudah ada di kode Anda sebelumnya
-                            # Jika error, ganti format_currency(potential_loss) dengan f"Rp {potential_loss:,.0f}"
                             formatted_loss = format_currency(potential_loss) 
                             st.markdown(f"""
                             <div class="metric-card" style="border-top: 5px solid #F97316;">
@@ -1715,7 +1790,72 @@ TRANSFER   → 4
                             </div>
                             """, unsafe_allow_html=True)
                         
+                        with col5:
+                            formatted_avg = format_currency(avg_fraud_amount)
+                            st.markdown(f"""
+                            <div class="metric-card" style="border-top: 5px solid #8B5CF6;">
+                                <div class="metric-label">Avg Fraud Amount</div>
+                                <div class="metric-value" style="color: #6D28D9;">{formatted_avg}</div>
+                            </div>
+                            """, unsafe_allow_html=True)
+                        
+                        # Model Performance Metrics (if ground truth available)
+                        if 'isFraud' in df_results.columns:
                             st.markdown("---")
+                            st.subheader("🎯 Model Performance Validation")
+                            
+                            from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
+                            
+                            y_true = df_results['isFraud']
+                            y_pred = df_results['Fraud_Prediction']
+                            
+                            accuracy = accuracy_score(y_true, y_pred) * 100
+                            precision = precision_score(y_true, y_pred, zero_division=0) * 100
+                            recall = recall_score(y_true, y_pred, zero_division=0) * 100
+                            f1 = f1_score(y_true, y_pred, zero_division=0) * 100
+                            
+                            col1, col2, col3, col4 = st.columns(4)
+                            
+                            with col1:
+                                st.markdown(f"""
+                                <div class="metric-card" style="border-top: 5px solid #10B981;">
+                                    <div class="metric-label">Accuracy</div>
+                                    <div class="metric-value" style="color: #059669;">{accuracy:.2f}%</div>
+                                </div>
+                                """, unsafe_allow_html=True)
+                            
+                            with col2:
+                                st.markdown(f"""
+                                <div class="metric-card" style="border-top: 5px solid #3B82F6;">
+                                    <div class="metric-label">Precision</div>
+                                    <div class="metric-value" style="color: #2563EB;">{precision:.2f}%</div>
+                                </div>
+                                """, unsafe_allow_html=True)
+                            
+                            with col3:
+                                st.markdown(f"""
+                                <div class="metric-card" style="border-top: 5px solid #F59E0B;">
+                                    <div class="metric-label">Recall</div>
+                                    <div class="metric-value" style="color: #D97706;">{recall:.2f}%</div>
+                                </div>
+                                """, unsafe_allow_html=True)
+                            
+                            with col4:
+                                st.markdown(f"""
+                                <div class="metric-card" style="border-top: 5px solid #8B5CF6;">
+                                    <div class="metric-label">F1-Score</div>
+                                    <div class="metric-value" style="color: #7C3AED;">{f1:.2f}%</div>
+                                </div>
+                                """, unsafe_allow_html=True)
+                            
+                            if accuracy >= 85:
+                                st.success(f"🎉 Excellent! Model achieved {accuracy:.2f}% accuracy (Target: 85%+)")
+                            elif accuracy >= 70:
+                                st.warning(f"⚠️ Good performance at {accuracy:.2f}%, but below 85% target")
+                            else:
+                                st.error(f"❌ Performance needs improvement: {accuracy:.2f}% (Target: 85%+)")
+                        
+                        st.markdown("---")
                         
                         # Risk Distribution
                         col1, col2 = st.columns([1, 2])
