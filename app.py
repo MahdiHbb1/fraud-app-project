@@ -663,8 +663,8 @@ def preprocess_data_form(df: pd.DataFrame, le_type, le_amount_cat, scaler, featu
 # ==============================================================================
 def clean_and_prepare_data(df):
     """
-    Membersihkan data, menstandarisasi nama kolom, dan memastikan urutan benar.
-    Mengatasi masalah variasi nama kolom dan urutan yang berbeda dari berbagai sumber data.
+    Cleans and prepares transaction data for fraud detection model.
+    Includes feature engineering for error balances and type mapping.
     """
     # 1. Reset Index untuk mencegah error Styler
     df = df.reset_index(drop=True)
@@ -694,20 +694,39 @@ def clean_and_prepare_data(df):
     df_clean = df.rename(columns=found_columns)
 
     # 4. Pastikan Tipe Data Numerik
-    numeric_cols = ['amount', 'oldbalanceOrg', 'newbalanceOrig', 'oldbalanceDest', 'newbalanceDest']
+    numeric_cols = ['step', 'amount', 'oldbalanceOrg', 'newbalanceOrig', 'oldbalanceDest', 'newbalanceDest']
     for col in numeric_cols:
         if col in df_clean.columns:
             df_clean[col] = pd.to_numeric(df_clean[col], errors='coerce').fillna(0)
 
-    # 5. Pastikan urutan kolom sesuai dengan yang diharapkan model
-    expected_features = ['step', 'type', 'amount', 'nameOrig', 'oldbalanceOrg', 
-                        'newbalanceOrig', 'nameDest', 'oldbalanceDest', 'newbalanceDest']
+    # 5. Feature Engineering - Calculate Error Balances
+    df_clean['errorBalanceOrig'] = df_clean['newbalanceOrig'] + df_clean['amount'] - df_clean['oldbalanceOrg']
+    df_clean['errorBalanceDest'] = df_clean['oldbalanceDest'] + df_clean['amount'] - df_clean['newbalanceDest']
+
+    # 6. Map Transaction Types to Numeric Values
+    type_mapping = {
+        'PAYMENT': 0,
+        'TRANSFER': 1,
+        'CASH_OUT': 2,
+        'DEBIT': 3,
+        'CASH_IN': 4
+    }
+    df_clean['type'] = df_clean['type'].map(type_mapping).fillna(0).astype(int)
+
+    # 7. Select and Order Final Features (Critical for Model Alignment)
+    final_columns = [
+        'step',
+        'type',
+        'amount',
+        'oldbalanceOrg',
+        'newbalanceOrig',
+        'newbalanceDest',
+        'oldbalanceDest',
+        'errorBalanceOrig',
+        'errorBalanceDest'
+    ]
     
-    # Reorder kolom
-    available_cols = [c for c in expected_features if c in df_clean.columns]
-    remaining_cols = [c for c in df_clean.columns if c not in expected_features]
-    
-    final_df = pd.concat([df_clean[available_cols], df_clean[remaining_cols]], axis=1)
+    final_df = df_clean[final_columns].copy()
     
     return final_df
 
