@@ -1800,16 +1800,17 @@ elif page == '📈 Analytics & Insights':
                     <li><strong>Scalability:</strong> Handle peak transaction volumes</li>
                     <li><strong>Resource Monitoring:</strong> Track system utilization</li>
                     <li><strong>Load Balancing:</strong> Distribute processing efficiently</li>
-            </ul>
-        </div>
-        """, unsafe_allow_html=True)
+                </ul>
+            </div>
+            """, unsafe_allow_html=True)
 
 # ============================================================================
 # PROFESSIONAL FOOTER
 # ============================================================================
 
-st.divider()
-st.markdown("<div style='margin: 2rem 0;'></div>", unsafe_allow_html=True)st.markdown("""
+st.markdown("<div style='margin: 3rem 0;'></div>", unsafe_allow_html=True)
+
+st.markdown("""
 <div style='background: linear-gradient(135deg, #002B5B 0%, #1E3A8A 100%); padding: 2.5rem; border-radius: 12px; box-shadow: 0 8px 16px rgba(0,0,0,0.2); text-align: center;'>
     <div style='margin-bottom: 1.5rem;'>
         <h2 style='color: #14B8A6; margin: 0; font-size: 1.75rem; font-weight: 800;'>🛡️ Banking Fraud Detection System</h2>
