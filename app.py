@@ -761,17 +761,23 @@ def preprocess_data_mapped(df_mapped: pd.DataFrame, le_type, le_amount_cat, scal
         df['balance_ratio'] = df['amount'] / (df['oldbalanceOrig'] + 1)
         df['dest_received'] = (df['newbalanceDest'] > df['oldbalanceDest']).astype(int)
         
-        # Handle unknown transaction types
-        known_types = set(le_type.classes_)
-        unknown_types = set(df['type']) - known_types
-        
-        if unknown_types:
-            st.warning(f"⚠️ Unknown transaction types detected: {unknown_types}")
-            st.info("Mapping unknown types to 'PAYMENT' for processing")
-            df['type'] = df['type'].apply(lambda x: 'PAYMENT' if x in unknown_types else x)
-        
-        # Label Encoding
-        df['type_encoded'] = le_type.transform(df['type'])
+        # Handle transaction type encoding
+        # Check if 'type' column is already numeric (from clean_and_prepare_data)
+        if pd.api.types.is_numeric_dtype(df['type']):
+            # Already converted to integers (0-4), use as-is for type_encoded
+            df['type_encoded'] = df['type'].astype(int)
+        else:
+            # Still categorical strings, need to transform
+            known_types = set(le_type.classes_)
+            unknown_types = set(df['type']) - known_types
+            
+            if unknown_types:
+                st.warning(f"⚠️ Unknown transaction types detected: {unknown_types}")
+                st.info("Mapping unknown types to 'PAYMENT' for processing")
+                df['type'] = df['type'].apply(lambda x: 'PAYMENT' if x in unknown_types else x)
+            
+            # Label Encoding
+            df['type_encoded'] = le_type.transform(df['type'])
         df['amount_category_encoded'] = le_amount_cat.transform(df['amount_category'])
         
         # Select features
