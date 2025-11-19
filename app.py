@@ -1460,15 +1460,16 @@ elif page == '📂 Batch Processing & Reports':
                             .metric-label {
                                 font-size: 0.9rem;
                                 font-weight: 600;
-                                color: #6b7280;
+                                color: #4B5563;
                                 text-transform: uppercase;
                                 letter-spacing: 0.05em;
                                 margin-bottom: 10px;
                             }
                             .metric-value {
-                                font-size: 1.8rem;
-                                font-weight: 800;
+                                font-size: 2rem;
+                                font-weight: 900;
                                 margin: 0;
+                                line-height: 1.2;
                             }
                         </style>
                         """, unsafe_allow_html=True)
@@ -1496,7 +1497,7 @@ elif page == '📂 Batch Processing & Reports':
                             st.markdown(f"""
                             <div class="metric-card" style="border-top: 5px solid #F59E0B;">
                                 <div class="metric-label">Fraud Rate</div>
-                                <div class="metric-value" style="color: #D97706;">{fraud_rate:.2f}%</div>
+                                <div class="metric-value" style="color: #B45309;">{fraud_rate:.2f}%</div>
                             </div>
                             """, unsafe_allow_html=True)
                         
