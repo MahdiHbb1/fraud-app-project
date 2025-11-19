@@ -663,72 +663,74 @@ def preprocess_data_form(df: pd.DataFrame, le_type, le_amount_cat, scaler, featu
 # ==============================================================================
 def clean_and_prepare_data(df):
     """
-    Cleans and prepares transaction data for fraud detection model.
-    Includes feature engineering for error balances and type mapping.
+    Unified pipeline: Standardizes columns, handles Type mapping, and adds Feature Engineering.
+    
+    This function:
+    1. Maps various column naming conventions to standard names
+    2. Performs feature engineering (error balances)
+    3. Converts transaction types to integers
+    4. Returns a clean dataframe ready for model prediction
+    
+    Args:
+        df: Raw pandas DataFrame from uploaded CSV/Excel
+        
+    Returns:
+        Cleaned pandas DataFrame with engineered features
     """
-    # 1. Reset Index untuk mencegah error Styler
-    df = df.reset_index(drop=True)
-
-    # 2. Dictionary Mapping (Nama di CSV -> Nama yang diharapkan Model)
-    column_mapping = {
+    df = df.copy()
+    
+    # 1. Smart Column Mapping (Handle various naming conventions)
+    col_map = {
         'step': ['step', 'Step', 'STEP'],
         'type': ['type', 'Type', 'TYPE', 'Transaction Type'],
         'amount': ['amount', 'Amount', 'AMOUNT', 'Nilai'],
         'nameOrig': ['nameOrig', 'NameOrig', 'Customer', 'nameOrigin'],
-        'oldbalanceOrg': ['oldbalanceOrg', 'oldBalanceOrig', 'OldBalanceOrg', 'OldBal Org'],
-        'newbalanceOrig': ['newbalanceOrig', 'newBalanceOrig', 'NewBalanceOrig', 'NewBal Orig'],
+        'oldbalanceOrg': ['oldbalanceOrg', 'OldBalanceOrg', 'OldBal Org', 'oldBalanceOrig'],
+        'newbalanceOrig': ['newbalanceOrig', 'NewBalanceOrig', 'NewBal Orig', 'newBalanceOrig'],
         'nameDest': ['nameDest', 'NameDest', 'Recipient', 'nameDestination'],
-        'oldbalanceDest': ['oldbalanceDest', 'oldBalanceDest', 'OldBalanceDest', 'OldBal Dest'],
-        'newbalanceDest': ['newbalanceDest', 'newBalanceDest', 'NewBalanceDest', 'NewBal Dest'],
-        'isFraud': ['isFraud', 'IsFraud', 'fraud', 'class']
+        'oldbalanceDest': ['oldbalanceDest', 'OldBalanceDest', 'OldBal Dest', 'oldBalanceDest'],
+        'newbalanceDest': ['newbalanceDest', 'NewBalanceDest', 'NewBal Dest', 'newBalanceDest'],
+        'isFraud': ['isFraud', 'IsFraud', 'fraud', 'Fraud', 'class']
     }
-
-    # 3. Lakukan Rename Kolom secara Otomatis
-    found_columns = {}
-    for target_col, variants in column_mapping.items():
-        for variant in variants:
-            if variant in df.columns:
-                found_columns[variant] = target_col
+    
+    # Rename columns based on map
+    found_cols = {}
+    for target, variants in col_map.items():
+        for v in variants:
+            if v in df.columns:
+                found_cols[v] = target
                 break
+    df = df.rename(columns=found_cols)
     
-    df_clean = df.rename(columns=found_columns)
-
-    # 4. Pastikan Tipe Data Numerik
-    numeric_cols = ['step', 'amount', 'oldbalanceOrg', 'newbalanceOrig', 'oldbalanceDest', 'newbalanceDest']
-    for col in numeric_cols:
-        if col in df_clean.columns:
-            df_clean[col] = pd.to_numeric(df_clean[col], errors='coerce').fillna(0)
-
-    # 5. Feature Engineering - Calculate Error Balances
-    df_clean['errorBalanceOrig'] = df_clean['newbalanceOrig'] + df_clean['amount'] - df_clean['oldbalanceOrg']
-    df_clean['errorBalanceDest'] = df_clean['oldbalanceDest'] + df_clean['amount'] - df_clean['newbalanceDest']
-
-    # 6. Map Transaction Types to Numeric Values
-    type_mapping = {
-        'PAYMENT': 0,
-        'TRANSFER': 1,
-        'CASH_OUT': 2,
-        'DEBIT': 3,
-        'CASH_IN': 4
-    }
-    df_clean['type'] = df_clean['type'].map(type_mapping).fillna(0).astype(int)
-
-    # 7. Select and Order Final Features (Critical for Model Alignment)
-    final_columns = [
-        'step',
-        'type',
-        'amount',
-        'oldbalanceOrg',
-        'newbalanceOrig',
-        'newbalanceDest',
-        'oldbalanceDest',
-        'errorBalanceOrig',
-        'errorBalanceDest'
-    ]
+    # 2. Ensure numeric types for calculation columns
+    num_cols = ['step', 'amount', 'oldbalanceOrg', 'newbalanceOrig', 'oldbalanceDest', 'newbalanceDest']
+    for c in num_cols:
+        if c in df.columns:
+            df[c] = pd.to_numeric(df[c], errors='coerce').fillna(0)
     
-    final_df = df_clean[final_columns].copy()
+    # 3. Feature Engineering (CRITICAL for Model Accuracy)
+    # Calculate Error Balances - captures discrepancies in transaction flow
+    # errorBalanceOrig: Expected balance change vs actual for origin account
+    # errorBalanceDest: Expected balance change vs actual for destination account
+    df['errorBalanceOrig'] = df['newbalanceOrig'] + df['amount'] - df['oldbalanceOrg']
+    df['errorBalanceDest'] = df['oldbalanceDest'] + df['amount'] - df['newbalanceDest']
     
-    return final_df
+    # 4. Type Mapping (String to Integer)
+    # Only map if column is string/object. If already int, keep as is.
+    if df['type'].dtype == 'object':
+        type_map = {
+            'PAYMENT': 0,
+            'TRANSFER': 1,
+            'CASH_OUT': 2,
+            'DEBIT': 3,
+            'CASH_IN': 4
+        }
+        df['type'] = df['type'].map(type_map).fillna(0).astype(int)
+    else:
+        # Already numeric, ensure integer type
+        df['type'] = df['type'].astype(int)
+    
+    return df
 
 def preprocess_data_mapped(df_mapped: pd.DataFrame, le_type, le_amount_cat, scaler, feature_columns) -> Tuple[Optional[np.ndarray], Optional[pd.DataFrame]]:
     """Enhanced preprocessing for batch data with anomaly detection"""
@@ -741,7 +743,7 @@ def preprocess_data_mapped(df_mapped: pd.DataFrame, le_type, le_amount_cat, scal
         if len(df) < initial_count:
             st.warning(f"⚠️ Removed {initial_count - len(df)} transactions with negative amounts")
         
-        # Feature Engineering (same as form)
+        # Feature Engineering
         df['balance_change_orig'] = df['newbalanceOrig'] - df['oldbalanceOrig']
         df['balance_change_dest'] = df['newbalanceDest'] - df['oldbalanceDest']
         
@@ -754,8 +756,18 @@ def preprocess_data_mapped(df_mapped: pd.DataFrame, le_type, le_amount_cat, scal
         
         df['orig_zero_after'] = (df['newbalanceOrig'] == 0).astype(int)
         df['dest_zero_before'] = (df['oldbalanceDest'] == 0).astype(int)
-        df['error_balance_orig'] = df['oldbalanceOrig'] + df['amount'] - df['newbalanceOrig']
-        df['error_balance_dest'] = df['oldbalanceDest'] + df['amount'] - df['newbalanceDest']
+        
+        # Check if error balances already exist (from clean_and_prepare_data)
+        # If not, calculate them here for backward compatibility
+        if 'errorBalanceOrig' not in df.columns:
+            df['error_balance_orig'] = df['oldbalanceOrig'] + df['amount'] - df['newbalanceOrig']
+        else:
+            df['error_balance_orig'] = df['errorBalanceOrig']
+            
+        if 'errorBalanceDest' not in df.columns:
+            df['error_balance_dest'] = df['oldbalanceDest'] + df['amount'] - df['newbalanceDest']
+        else:
+            df['error_balance_dest'] = df['errorBalanceDest']
         
         # Additional features
         df['balance_ratio'] = df['amount'] / (df['oldbalanceOrig'] + 1)
@@ -1455,11 +1467,29 @@ elif page == '📂 Batch Processing & Reports':
         if process_button:
             with st.spinner("⚙️ Processing batch data..."):
                 try:
-                    # Data already cleaned by clean_and_prepare_data(), use directly
-                    required_cols = ['type', 'amount', 'oldbalanceOrg', 'newbalanceOrig', 'oldbalanceDest', 'newbalanceDest']
-                    df_mapped = df_bank[required_cols].copy()
+                    # Define exact feature columns required by model (CRITICAL ORDER)
+                    feature_cols = [
+                        'step',
+                        'type',
+                        'amount',
+                        'oldbalanceOrg',
+                        'newbalanceOrig',
+                        'newbalanceDest',
+                        'oldbalanceDest',
+                        'errorBalanceOrig',
+                        'errorBalanceDest'
+                    ]
                     
-                    # Rename oldbalanceOrg to oldbalanceOrig for consistency
+                    # Verify all required columns exist
+                    missing_cols = [col for col in feature_cols if col not in df_bank.columns]
+                    if missing_cols:
+                        st.error(f"❌ Missing required columns: {missing_cols}")
+                        st.info("The uploaded file may be in an unsupported format.")
+                    
+                    # Extract feature matrix X (data already cleaned and engineered)
+                    df_mapped = df_bank[feature_cols].copy()
+                    
+                    # Rename oldbalanceOrg to oldbalanceOrig for consistency with preprocessing
                     df_mapped = df_mapped.rename(columns={'oldbalanceOrg': 'oldbalanceOrig'})
                     
                     X_scaled, df_processed = preprocess_data_mapped(
