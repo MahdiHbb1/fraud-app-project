@@ -679,18 +679,18 @@ def clean_and_prepare_data(df):
     """
     df = df.copy()
     
-    # 1. Smart Column Mapping (Handle various naming conventions)
+    # 1. Smart Column Mapping (Handle various naming conventions including Indonesian)
     col_map = {
-        'step': ['step', 'Step', 'STEP'],
-        'type': ['type', 'Type', 'TYPE', 'Transaction Type'],
-        'amount': ['amount', 'Amount', 'AMOUNT', 'Nilai'],
-        'nameOrig': ['nameOrig', 'NameOrig', 'Customer', 'nameOrigin'],
-        'oldbalanceOrg': ['oldbalanceOrg', 'OldBalanceOrg', 'OldBal Org', 'oldBalanceOrig'],
-        'newbalanceOrig': ['newbalanceOrig', 'NewBalanceOrig', 'NewBal Orig', 'newBalanceOrig'],
-        'nameDest': ['nameDest', 'NameDest', 'Recipient', 'nameDestination'],
-        'oldbalanceDest': ['oldbalanceDest', 'OldBalanceDest', 'OldBal Dest', 'oldBalanceDest'],
-        'newbalanceDest': ['newbalanceDest', 'NewBalanceDest', 'NewBal Dest', 'newBalanceDest'],
-        'isFraud': ['isFraud', 'IsFraud', 'fraud', 'Fraud', 'class']
+        'step': ['step', 'Step', 'STEP', 'time', 'Time'],
+        'type': ['type', 'Type', 'TYPE', 'Transaction Type', 'Tipe', 'Jenis'],
+        'amount': ['amount', 'Amount', 'AMOUNT', 'Nilai', 'Nominal', 'Jumlah'],
+        'nameOrig': ['nameOrig', 'NameOrig', 'Customer', 'Pengirim', 'nameOrigin', 'origin'],
+        'oldbalanceOrg': ['oldbalanceOrg', 'OldBalanceOrg', 'OldBal Org', 'SaldoAwal', 'oldBalanceOrig'],
+        'newbalanceOrig': ['newbalanceOrig', 'NewBalanceOrig', 'NewBal Orig', 'SaldoAkhir', 'newBalanceOrig'],
+        'nameDest': ['nameDest', 'NameDest', 'Recipient', 'Penerima', 'nameDestination', 'destination'],
+        'oldbalanceDest': ['oldbalanceDest', 'OldBalanceDest', 'OldBal Dest', 'SaldoAwalTujuan'],
+        'newbalanceDest': ['newbalanceDest', 'NewBalanceDest', 'NewBal Dest', 'SaldoAkhirTujuan'],
+        'isFraud': ['isFraud', 'IsFraud', 'fraud', 'Fraud', 'is_fraud', 'class']
     }
     
     # Rename columns based on map
@@ -710,25 +710,35 @@ def clean_and_prepare_data(df):
     
     # 3. Feature Engineering (CRITICAL for Model Accuracy)
     # Calculate Error Balances - captures discrepancies in transaction flow
-    # errorBalanceOrig: Expected balance change vs actual for origin account
-    # errorBalanceDest: Expected balance change vs actual for destination account
-    df['errorBalanceOrig'] = df['newbalanceOrig'] + df['amount'] - df['oldbalanceOrg']
-    df['errorBalanceDest'] = df['oldbalanceDest'] + df['amount'] - df['newbalanceDest']
-    
-    # 4. Type Mapping (String to Integer)
-    # Only map if column is string/object. If already int, keep as is.
-    if df['type'].dtype == 'object':
-        type_map = {
-            'PAYMENT': 0,
-            'TRANSFER': 1,
-            'CASH_OUT': 2,
-            'DEBIT': 3,
-            'CASH_IN': 4
-        }
-        df['type'] = df['type'].map(type_map).fillna(0).astype(int)
+    # These features are key fraud indicators
+    if all(col in df.columns for col in ['newbalanceOrig', 'amount', 'oldbalanceOrg']):
+        df['errorBalanceOrig'] = df['newbalanceOrig'] + df['amount'] - df['oldbalanceOrg']
     else:
-        # Already numeric, ensure integer type
-        df['type'] = df['type'].astype(int)
+        df['errorBalanceOrig'] = 0
+    
+    if all(col in df.columns for col in ['oldbalanceDest', 'amount', 'newbalanceDest']):
+        df['errorBalanceDest'] = df['oldbalanceDest'] + df['amount'] - df['newbalanceDest']
+    else:
+        df['errorBalanceDest'] = 0
+    
+    # 4. Robust Type Mapping (String to Integer)
+    # Only map if column is string/object. If already int, keep as is.
+    if 'type' in df.columns:
+        if df['type'].dtype == 'object':
+            # String values - apply mapping with case-insensitive matching
+            type_map = {
+                'PAYMENT': 0,
+                'TRANSFER': 1,
+                'CASH_OUT': 2,
+                'DEBIT': 3,
+                'CASH_IN': 4
+            }
+            # Convert to uppercase for consistent mapping
+            df['type'] = df['type'].str.upper() if df['type'].dtype == 'object' else df['type']
+            df['type'] = df['type'].map(type_map).fillna(0).astype(int)
+        else:
+            # Already numeric, ensure integer type
+            df['type'] = df['type'].fillna(0).astype(int)
     
     return df
 
@@ -1403,22 +1413,48 @@ elif page == '📂 Batch Processing & Reports':
     uploaded_file = st.file_uploader(
         "Select your transaction file",
         type=["csv", "xls", "xlsx"],
-        help="Upload CSV or Excel file containing transaction data",
+        help="Supports CSV and Excel formats (.csv, .xlsx, .xls) with various column naming conventions",
         label_visibility="collapsed"
     )
     
     if uploaded_file is not None:
         try:
-            # Load file
+            # Display file info
+            col1, col2, col3 = st.columns(3)
+            with col1:
+                st.metric("📁 Filename", uploaded_file.name)
+            with col2:
+                st.metric("📏 File Size", f"{uploaded_file.size / 1024:.2f} KB")
+            with col3:
+                file_ext = uploaded_file.name.split('.')[-1].upper()
+                st.metric("📄 Type", file_ext)
+            
+            # Load file based on extension
             if uploaded_file.name.endswith('.csv'):
+                st.info("📄 Reading CSV file...")
                 df_raw = pd.read_csv(uploaded_file)
-            else:
+            elif uploaded_file.name.endswith(('.xls', '.xlsx')):
+                st.info("📊 Reading Excel file...")
                 df_raw = pd.read_excel(uploaded_file, engine='openpyxl')
+            else:
+                st.error("❌ Unsupported file format")
+                st.stop()
             
             # Apply smart cleaning and column standardization
+            st.info("⚙️ Processing data through preprocessing pipeline...")
             df_bank = clean_and_prepare_data(df_raw)
             
-            st.success(f"✅ Successfully loaded and cleaned {len(df_bank):,} transactions from {uploaded_file.name}")
+            # Validate required features exist
+            required_features = ['step', 'type', 'amount', 'oldbalanceOrg', 'newbalanceOrig', 
+                               'newbalanceDest', 'oldbalanceDest', 'errorBalanceOrig', 'errorBalanceDest']
+            missing_features = [f for f in required_features if f not in df_bank.columns]
+            
+            if missing_features:
+                st.error(f"❌ Missing required features after processing: {missing_features}")
+                st.warning("Please ensure your file contains all necessary transaction fields.")
+                st.stop()
+            
+            st.success(f"✅ Successfully loaded and processed {len(df_bank):,} transactions from {uploaded_file.name}")
             
             # Show column mapping info if changes were made
             if list(df_raw.columns) != list(df_bank.columns):
@@ -1426,19 +1462,31 @@ elif page == '📂 Batch Processing & Reports':
                     col1, col2 = st.columns(2)
                     with col1:
                         st.write("**Original Columns:**")
-                        st.code('\n'.join(df_raw.columns[:10]))
+                        st.code('\n'.join(df_raw.columns[:15]))
                     with col2:
                         st.write("**Standardized Columns:**")
-                        st.code('\n'.join(df_bank.columns[:10]))
+                        st.code('\n'.join(df_bank.columns[:15]))
+            
+            # Show feature engineering info
+            with st.expander("✨ Feature Engineering Applied"):
+                st.write("**Engineered Features:**")
+                st.write("- `errorBalanceOrig`: Captures balance discrepancy for origin account")
+                st.write("- `errorBalanceDest`: Captures balance discrepancy for destination account")
+                st.write("- `type`: Converted to numeric encoding (0=PAYMENT, 1=TRANSFER, 2=CASH_OUT, 3=DEBIT, 4=CASH_IN)")
             
             st.session_state['df_bank'] = df_bank
             
-            # Preview
-            with st.expander("👁️ Preview Data"):
-                st.dataframe(df_bank.head(10), width="stretch")
+            # Preview processed data
+            with st.expander("👁️ Preview Processed Data"):
+                st.dataframe(df_bank.head(10), use_container_width=True)
+                
+                # Show statistics
+                st.write("**Data Statistics:**")
+                st.write(df_bank[required_features].describe())
                 
         except Exception as e:
-            st.error(f"❌ Error loading file: {str(e)}")
+            st.error(f"❌ Error processing file: {str(e)}")
+            st.exception(e)
             if 'df_bank' in st.session_state:
                 del st.session_state['df_bank']
     
