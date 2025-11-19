@@ -1,4 +1,4 @@
-# @Author:xxx
+﻿# @Author:xxx
 # @Date:2025-11-10 08:02:50
 # @LastModifiedBy:xxx
 # @Last Modified time:2025-11-19 16:17:13
@@ -1843,18 +1843,9 @@ elif page == '📈 Analytics & Insights':
         """, unsafe_allow_html=True)
 
 # ============================================================================
-# PROFESSIONAL FOOTER - SIMPLIFIED
+# FOOTER - ULTRA SIMPLE (NO HTML)
 # ============================================================================
 
 st.divider()
-
-# Simple footer without complex HTML
-st.markdown("---")
-st.markdown("""
-<div style='text-align: center; padding: 2rem; background: linear-gradient(135deg, #002B5B 0%, #1E3A8A 100%); border-radius: 12px; color: white;'>
-    <h3 style='color: #14B8A6; margin-bottom: 1rem;'>🛡️ Banking Fraud Detection System v3.0</h3>
-    <p style='margin: 0.5rem 0;'><strong>Development Team:</strong> Mahdi • Ibnu • Brian • Anya</p>
-    <p style='margin: 0.5rem 0; font-size: 0.9rem; opacity: 0.8;'>© 2025 Enterprise Banking Solutions | ML-Powered Fraud Prevention</p>
-    <p style='margin-top: 1rem; color: #10B981; font-weight: 600;'>🟢 System Status: Operational</p>
-</div>
-""", unsafe_allow_html=True)
+st.info("🛡️ **Banking Fraud Detection System v3.0** | Development Team: Mahdi • Ibnu • Brian • Anya")
+st.caption("© 2025 Enterprise Banking Solutions | 🟢 System Status: Operational")
