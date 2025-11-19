@@ -1805,67 +1805,18 @@ elif page == '📈 Analytics & Insights':
         """, unsafe_allow_html=True)
 
 # ============================================================================
-# PROFESSIONAL FOOTER
+# PROFESSIONAL FOOTER - SIMPLIFIED
 # ============================================================================
 
 st.divider()
-st.markdown("<div style='margin: 2rem 0;'></div>", unsafe_allow_html=True)
 
+# Simple footer without complex HTML
+st.markdown("---")
 st.markdown("""
-<div style='background: linear-gradient(135deg, #002B5B 0%, #1E3A8A 100%); padding: 2.5rem; border-radius: 12px; box-shadow: 0 8px 16px rgba(0,0,0,0.2); text-align: center;'>
-    <div style='margin-bottom: 1.5rem;'>
-        <h2 style='color: #14B8A6; margin: 0; font-size: 1.75rem; font-weight: 800;'>🛡️ Banking Fraud Detection System</h2>
-        <p style='color: #93C5FD; margin: 0.5rem 0 0 0; font-size: 0.95rem;'>Version 3.0 Enhanced Edition</p>
-    </div>
-    
-    <div style='border-top: 2px solid rgba(20, 184, 166, 0.3); border-bottom: 2px solid rgba(20, 184, 166, 0.3); padding: 1.5rem 0; margin: 1.5rem 0;'>
-        <div style='display: flex; justify-content: center; gap: 3rem; flex-wrap: wrap; color: white; font-size: 0.9rem;'>
-            <div>
-                <div style='color: #14B8A6; font-weight: 700; margin-bottom: 0.5rem;'>🤖 Technology</div>
-                <div>Machine Learning</div>
-                <div>Random Forest AI</div>
-            </div>
-            <div>
-                <div style='color: #14B8A6; font-weight: 700; margin-bottom: 0.5rem;'>🎯 Accuracy</div>
-                <div>99.7% Detection Rate</div>
-                <div>&lt;50ms Response Time</div>
-            </div>
-            <div>
-                <div style='color: #14B8A6; font-weight: 700; margin-bottom: 0.5rem;'>🔒 Security</div>
-                <div>Enterprise-Grade</div>
-                <div>Banking Standard</div>
-            </div>
-            <div>
-                <div style='color: #14B8A6; font-weight: 700; margin-bottom: 0.5rem;'>👥 Team</div>
-                <div>Expert Data Scientists</div>
-                <div>ML Engineers</div>
-            </div>
-        </div>
-    </div>
-    
-    <div style='margin-top: 1.5rem;'>
-        <p style='color: #93C5FD; margin: 0.5rem 0; font-size: 0.9rem;'>
-            <strong>Development Team:</strong> Mahdi • Ibnu • Brian • Anya
-        </p>
-        <p style='color: rgba(255,255,255,0.7); margin: 1rem 0 0 0; font-size: 0.85rem;'>
-            © 2024 Enterprise Banking Solutions | All Rights Reserved
-        </p>
-        <p style='color: rgba(255,255,255,0.6); margin: 0.5rem 0 0 0; font-size: 0.8rem;'>
-            Powered by Advanced Machine Learning & Artificial Intelligence
-        </p>
-        <div style='margin-top: 1rem; color: #10B981; font-size: 0.85rem; font-weight: 600;'>
-            🟢 System Status: Operational | Last Updated: November 2024
-        </div>
-    </div>
-</div>
-""", unsafe_allow_html=True)
-
-st.markdown("<div style='margin: 1rem 0;'></div>", unsafe_allow_html=True)
-
-# Copyright Notice
-st.markdown("""
-<div style='text-align: center; color: #6B7280; font-size: 0.75rem; padding: 1rem;'>
-    <p style='margin: 0;'>This application is designed for banking and financial institutions to detect and prevent fraudulent transactions.</p>
-    <p style='margin: 0.5rem 0 0 0;'>For technical support, training, or enterprise inquiries, please contact your system administrator.</p>
+<div style='text-align: center; padding: 2rem; background: linear-gradient(135deg, #002B5B 0%, #1E3A8A 100%); border-radius: 12px; color: white;'>
+    <h3 style='color: #14B8A6; margin-bottom: 1rem;'>🛡️ Banking Fraud Detection System v3.0</h3>
+    <p style='margin: 0.5rem 0;'><strong>Development Team:</strong> Mahdi • Ibnu • Brian • Anya</p>
+    <p style='margin: 0.5rem 0; font-size: 0.9rem; opacity: 0.8;'>© 2024 Enterprise Banking Solutions | ML-Powered Fraud Prevention</p>
+    <p style='margin-top: 1rem; color: #10B981; font-weight: 600;'>🟢 System Status: Operational</p>
 </div>
 """, unsafe_allow_html=True)
