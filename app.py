@@ -658,6 +658,59 @@ def preprocess_data_form(df: pd.DataFrame, le_type, le_amount_cat, scaler, featu
         st.error(f"❌ Preprocessing error: {str(e)}")
         return None, None
 
+# ==============================================================================
+# SMART COLUMN MAPPING & CLEANING FUNCTION
+# ==============================================================================
+def clean_and_prepare_data(df):
+    """
+    Membersihkan data, menstandarisasi nama kolom, dan memastikan urutan benar.
+    Mengatasi masalah variasi nama kolom dan urutan yang berbeda dari berbagai sumber data.
+    """
+    # 1. Reset Index untuk mencegah error Styler
+    df = df.reset_index(drop=True)
+
+    # 2. Dictionary Mapping (Nama di CSV -> Nama yang diharapkan Model)
+    column_mapping = {
+        'step': ['step', 'Step', 'STEP'],
+        'type': ['type', 'Type', 'TYPE', 'Transaction Type'],
+        'amount': ['amount', 'Amount', 'AMOUNT', 'Nilai'],
+        'nameOrig': ['nameOrig', 'NameOrig', 'Customer', 'nameOrigin'],
+        'oldbalanceOrg': ['oldbalanceOrg', 'oldBalanceOrig', 'OldBalanceOrg', 'OldBal Org'],
+        'newbalanceOrig': ['newbalanceOrig', 'newBalanceOrig', 'NewBalanceOrig', 'NewBal Orig'],
+        'nameDest': ['nameDest', 'NameDest', 'Recipient', 'nameDestination'],
+        'oldbalanceDest': ['oldbalanceDest', 'oldBalanceDest', 'OldBalanceDest', 'OldBal Dest'],
+        'newbalanceDest': ['newbalanceDest', 'newBalanceDest', 'NewBalanceDest', 'NewBal Dest'],
+        'isFraud': ['isFraud', 'IsFraud', 'fraud', 'class']
+    }
+
+    # 3. Lakukan Rename Kolom secara Otomatis
+    found_columns = {}
+    for target_col, variants in column_mapping.items():
+        for variant in variants:
+            if variant in df.columns:
+                found_columns[variant] = target_col
+                break
+    
+    df_clean = df.rename(columns=found_columns)
+
+    # 4. Pastikan Tipe Data Numerik
+    numeric_cols = ['amount', 'oldbalanceOrg', 'newbalanceOrig', 'oldbalanceDest', 'newbalanceDest']
+    for col in numeric_cols:
+        if col in df_clean.columns:
+            df_clean[col] = pd.to_numeric(df_clean[col], errors='coerce').fillna(0)
+
+    # 5. Pastikan urutan kolom sesuai dengan yang diharapkan model
+    expected_features = ['step', 'type', 'amount', 'nameOrig', 'oldbalanceOrg', 
+                        'newbalanceOrig', 'nameDest', 'oldbalanceDest', 'newbalanceDest']
+    
+    # Reorder kolom
+    available_cols = [c for c in expected_features if c in df_clean.columns]
+    remaining_cols = [c for c in df_clean.columns if c not in expected_features]
+    
+    final_df = pd.concat([df_clean[available_cols], df_clean[remaining_cols]], axis=1)
+    
+    return final_df
+
 def preprocess_data_mapped(df_mapped: pd.DataFrame, le_type, le_amount_cat, scaler, feature_columns) -> Tuple[Optional[np.ndarray], Optional[pd.DataFrame]]:
     """Enhanced preprocessing for batch data with anomaly detection"""
     try:
@@ -1319,12 +1372,28 @@ elif page == '📂 Batch Processing & Reports':
     
     if uploaded_file is not None:
         try:
+            # Load file
             if uploaded_file.name.endswith('.csv'):
-                df_bank = pd.read_csv(uploaded_file)
+                df_raw = pd.read_csv(uploaded_file)
             else:
-                df_bank = pd.read_excel(uploaded_file, engine='openpyxl')
+                df_raw = pd.read_excel(uploaded_file, engine='openpyxl')
             
-            st.success(f"✅ Successfully loaded {len(df_bank):,} transactions from {uploaded_file.name}")
+            # Apply smart cleaning and column standardization
+            df_bank = clean_and_prepare_data(df_raw)
+            
+            st.success(f"✅ Successfully loaded and cleaned {len(df_bank):,} transactions from {uploaded_file.name}")
+            
+            # Show column mapping info if changes were made
+            if list(df_raw.columns) != list(df_bank.columns):
+                with st.expander("🔄 Column Mapping Applied", expanded=False):
+                    col1, col2 = st.columns(2)
+                    with col1:
+                        st.write("**Original Columns:**")
+                        st.code('\n'.join(df_raw.columns[:10]))
+                    with col2:
+                        st.write("**Standardized Columns:**")
+                        st.code('\n'.join(df_bank.columns[:10]))
+            
             st.session_state['df_bank'] = df_bank
             
             # Preview
