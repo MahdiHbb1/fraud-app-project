@@ -1,7 +1,7 @@
-﻿# @Author:xxx
+# @Author:xxx
 # @Date:2025-11-10 08:02:50
 # @LastModifiedBy:xxx
-# @Last Modified time:2025-11-10 08:02:50
+# @Last Modified time:2025-11-19 16:17:13
 # -*- coding: utf-8 -*-
 """
 APLIKASI WEB DETEKSI FRAUD v3.0 - ENHANCED EDITION
@@ -746,7 +746,7 @@ st.sidebar.markdown("""
     <div style='color: white; font-size: 0.875rem; line-height: 1.8;'>
         <p style='margin: 0.25rem 0;'><strong>Version:</strong> 3.0 Enhanced</p>
         <p style='margin: 0.25rem 0;'><strong>Model:</strong> Random Forest</p>
-        <p style='margin: 0.25rem 0;'><strong>Updated:</strong> November 2024</p>
+        <p style='margin: 0.25rem 0;'><strong>Updated:</strong> November 2025</p>
         <p style='margin: 0.25rem 0;'><strong>Status:</strong> <span style='color: #10B981;'>🟢 Online</span></p>
     </div>
 </div>
@@ -759,8 +759,8 @@ st.sidebar.markdown("""
     <div style='color: rgba(255,255,255,0.9); font-size: 0.85rem; line-height: 1.8;'>
         <p style='margin: 0.25rem 0;'>• <strong>Mahdi</strong> - ML Engineer</p>
         <p style='margin: 0.25rem 0;'>• <strong>Ibnu</strong> - Data Scientist</p>
-        <p style='margin: 0.25rem 0;'>• <strong>Brian</strong> - Backend Developer</p>
-        <p style='margin: 0.25rem 0;'>• <strong>Anya</strong> - Frontend Developer</p>
+        <p style='margin: 0.25rem 0;'>• <strong>Brian</strong> - Frontend Developer</p>
+        <p style='margin: 0.25rem 0;'>• <strong>Anya</strong> - Backend Developer</p>
     </div>
     <div style='margin-top: 1rem; padding-top: 1rem; border-top: 1px solid rgba(255,255,255,0.1);'>
         <p style='color: #14B8A6; margin: 0; font-size: 0.875rem; font-weight: 600;'>🏦 Enterprise Banking Solutions</p>
@@ -1431,6 +1431,7 @@ elif page == '📂 Batch Processing & Reports':
                         # Executive Summary
                         st.subheader("📊 Executive Summary")
                         
+                        # 1. Hitung Metrik (Logika tetap sama)
                         total_transactions = len(df_results)
                         total_fraud = len(df_fraud)
                         fraud_rate = (total_fraud / total_transactions * 100) if total_transactions > 0 else 0
@@ -1439,41 +1440,78 @@ elif page == '📂 Batch Processing & Reports':
                             mapping_dict['amount']
                         ].sum()
                         
+                        # 2. Inject CSS Khusus untuk Kartu (Card Styles)
+                        st.markdown("""
+                        <style>
+                            .metric-card {
+                                background-color: #FFFFFF;
+                                border-radius: 10px;
+                                padding: 20px;
+                                box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1), 0 1px 3px rgba(0, 0, 0, 0.08);
+                                text-align: center;
+                                transition: transform 0.2s ease-in-out;
+                                border: 1px solid #e5e7eb;
+                                height: 100%;
+                            }
+                            .metric-card:hover {
+                                transform: translateY(-5px);
+                                box-shadow: 0 10px 15px rgba(0, 0, 0, 0.1);
+                            }
+                            .metric-label {
+                                font-size: 0.9rem;
+                                font-weight: 600;
+                                color: #6b7280;
+                                text-transform: uppercase;
+                                letter-spacing: 0.05em;
+                                margin-bottom: 10px;
+                            }
+                            .metric-value {
+                                font-size: 1.8rem;
+                                font-weight: 800;
+                                margin: 0;
+                            }
+                        </style>
+                        """, unsafe_allow_html=True)
+                        
+                        # 3. Tampilkan dalam Kolom (Layout Baru)
                         col1, col2, col3, col4 = st.columns(4)
                         
                         with col1:
-                            st.markdown("""
-                            <div class="metric-container">
-                            <h4>Total Transactions</h4>
-                            <h2 style='color:#667eea'>{:,}</h2>
+                            st.markdown(f"""
+                            <div class="metric-card" style="border-top: 5px solid #3B82F6;">
+                                <div class="metric-label">Total Transactions</div>
+                                <div class="metric-value" style="color: #1E40AF;">{total_transactions:,}</div>
                             </div>
-                            """.format(total_transactions), unsafe_allow_html=True)
+                            """, unsafe_allow_html=True)
                         
                         with col2:
-                            st.markdown("""
-                            <div class="metric-container">
-                            <h4>Fraud Detected</h4>
-                            <h2 style='color:#dc3545'>{:,}</h2>
+                            st.markdown(f"""
+                            <div class="metric-card" style="border-top: 5px solid #EF4444;">
+                                <div class="metric-label">Fraud Detected</div>
+                                <div class="metric-value" style="color: #DC2626;">{total_fraud:,}</div>
                             </div>
-                            """.format(total_fraud), unsafe_allow_html=True)
+                            """, unsafe_allow_html=True)
                         
                         with col3:
-                            st.markdown("""
-                            <div class="metric-container">
-                            <h4>Fraud Rate</h4>
-                            <h2 style='color:#ffc107'>{:.2f}%</h2>
+                            st.markdown(f"""
+                            <div class="metric-card" style="border-top: 5px solid #F59E0B;">
+                                <div class="metric-label">Fraud Rate</div>
+                                <div class="metric-value" style="color: #D97706;">{fraud_rate:.2f}%</div>
                             </div>
-                            """.format(fraud_rate), unsafe_allow_html=True)
+                            """, unsafe_allow_html=True)
                         
                         with col4:
-                            st.markdown("""
-                            <div class="metric-container">
-                            <h4>Potential Loss</h4>
-                            <h2 style='color:#fd7e14'>{}</h2>
+                            # Pastikan fungsi format_currency sudah ada di kode Anda sebelumnya
+                            # Jika error, ganti format_currency(potential_loss) dengan f"Rp {potential_loss:,.0f}"
+                            formatted_loss = format_currency(potential_loss) 
+                            st.markdown(f"""
+                            <div class="metric-card" style="border-top: 5px solid #F97316;">
+                                <div class="metric-label">Potential Loss</div>
+                                <div class="metric-value" style="color: #C2410C;">{formatted_loss}</div>
                             </div>
-                            """.format(format_currency(potential_loss)), unsafe_allow_html=True)
+                            """, unsafe_allow_html=True)
                         
-                        st.markdown("---")
+                            st.markdown("---")
                         
                         # Risk Distribution
                         col1, col2 = st.columns([1, 2])
@@ -1816,7 +1854,7 @@ st.markdown("""
 <div style='text-align: center; padding: 2rem; background: linear-gradient(135deg, #002B5B 0%, #1E3A8A 100%); border-radius: 12px; color: white;'>
     <h3 style='color: #14B8A6; margin-bottom: 1rem;'>🛡️ Banking Fraud Detection System v3.0</h3>
     <p style='margin: 0.5rem 0;'><strong>Development Team:</strong> Mahdi • Ibnu • Brian • Anya</p>
-    <p style='margin: 0.5rem 0; font-size: 0.9rem; opacity: 0.8;'>© 2024 Enterprise Banking Solutions | ML-Powered Fraud Prevention</p>
+    <p style='margin: 0.5rem 0; font-size: 0.9rem; opacity: 0.8;'>© 2025 Enterprise Banking Solutions | ML-Powered Fraud Prevention</p>
     <p style='margin-top: 1rem; color: #10B981; font-weight: 600;'>🟢 System Status: Operational</p>
 </div>
 """, unsafe_allow_html=True)
