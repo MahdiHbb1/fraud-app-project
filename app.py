@@ -1604,7 +1604,8 @@ elif page == '📂 Batch Processing & Reports':
                                 df_fraud['Risk_Level'].isin(['CRITICAL', 'HIGH'])
                             ].head(20)
                             
-                            display_cols = ['Risk_Level', 'Fraud_Probability'] + list(mapping_dict.values())
+                            # Use standardized column names from cleaned data
+                            display_cols = ['Risk_Level', 'Fraud_Probability', 'type', 'amount', 'oldbalanceOrg', 'newbalanceOrig', 'oldbalanceDest', 'newbalanceDest']
                             
                             # Color code by risk
                             def highlight_risk(row):
