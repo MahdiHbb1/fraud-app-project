@@ -1549,7 +1549,7 @@ TRANSFER   → 4  (Fifth - Alphabetically last)
         st.subheader("🚀 Production Fraud Detection Analysis")
         st.info("✅ Both Display View (text) and Model View (numbers) are ready for production analysis")
         
-        # Model Selection
+        # Model Selection and Threshold Control
         col1, col2, col3 = st.columns([2, 2, 1])
         with col1:
             model_choice_batch = st.radio(
@@ -1558,6 +1558,17 @@ TRANSFER   → 4  (Fifth - Alphabetically last)
                 horizontal=True,
                 help="Random Forest recommended for production use"
             )
+        
+        with col2:
+            fraud_threshold = st.slider(
+                "Fraud Detection Threshold",
+                min_value=0.1,
+                max_value=0.9,
+                value=0.3,
+                step=0.05,
+                help="Lower = More sensitive (detect more fraud, but more false alarms). Higher = More conservative (miss some fraud, but fewer false alarms)"
+            )
+            st.caption(f"Current: {fraud_threshold:.2f} {'🔴 Sensitive' if fraud_threshold < 0.4 else '🟡 Balanced' if fraud_threshold < 0.6 else '🟢 Conservative'}")
         
         with col3:
             process_button = st.button(
@@ -1663,11 +1674,15 @@ TRANSFER   → 4  (Fifth - Alphabetically last)
                         model_to_use = artifacts['rf_model'] if "Random Forest" in model_choice_batch else artifacts['dt_model']
                         model_name = "Random Forest" if "Random Forest" in model_choice_batch else "Decision Tree"
                         
-                        st.info(f"🤖 Using {model_name} for predictions...")
+                        st.info(f"🤖 Using {model_name} with fraud threshold: {fraud_threshold:.2f} {'🔴 (High Sensitivity)' if fraud_threshold < 0.4 else '🟡 (Balanced)' if fraud_threshold < 0.6 else '🟢 (Conservative)'}")
                         
-                        # Generate predictions
-                        predictions = model_to_use.predict(X_scaled)
+                        # Generate predictions with USER-SELECTED THRESHOLD
+                        # Lower threshold = more sensitive fraud detection
+                        # Higher threshold = more conservative (fewer false positives)
                         probabilities = model_to_use.predict_proba(X_scaled)[:, 1]
+                        
+                        # Use threshold from slider (default 0.3)
+                        predictions = (probabilities >= fraud_threshold).astype(int)
                         
                         # ========================================
                         # STEP 6: Attach Results to Display View
@@ -1856,18 +1871,42 @@ TRANSFER   → 4  (Fifth - Alphabetically last)
                                 st.error(f"❌ Performance needs improvement: {accuracy:.2f}% (Target: 85%+)")
                             
                             # Add debugging info to help diagnose accuracy issues
-                            with st.expander("🔧 Accuracy Debugging Information"):
+                            with st.expander("🔧 Accuracy Debugging & Threshold Recommendations"):
+                                st.info(f"🎯 **Current Threshold:** {fraud_threshold:.2f} (Default 0.5, Recommended for fraud: 0.2-0.4)")
+                                
+                                # Analyze performance and give recommendations
+                                from sklearn.metrics import confusion_matrix
+                                cm = confusion_matrix(y_true, y_pred)
+                                tn, fp, fn, tp = cm[0,0], cm[0,1], cm[1,0], cm[1,1]
+                                
+                                st.write("")
+                                st.write("**📊 Confusion Matrix Analysis:**")
+                                col_a, col_b = st.columns(2)
+                                with col_a:
+                                    st.metric("✅ True Negatives (Correct Normal)", tn)
+                                    st.metric("❌ False Positives (False Alarm)", fp)
+                                with col_b:
+                                    st.metric("✅ True Positives (Caught Fraud)", tp)
+                                    st.metric("❌ False Negatives (Missed Fraud)", fn)
+                                
+                                st.write("")
+                                
+                                # Give threshold recommendations
+                                if fn > tp * 2:  # Missing more than 2x of what we catch
+                                    st.error(f"⚠️ **HIGH FALSE NEGATIVES** - Missing {fn} fraud cases!")
+                                    st.write(f"💡 **Recommendation:** Lower threshold to 0.2-0.25 for better fraud detection")
+                                elif fp > tn * 0.1:  # Too many false alarms
+                                    st.warning(f"⚠️ **HIGH FALSE POSITIVES** - {fp} false alarms")
+                                    st.write(f"💡 **Recommendation:** Raise threshold to 0.4-0.5 to reduce false alarms")
+                                else:
+                                    st.success("✅ Good balance between detection and false alarms")
+                                
+                                st.write("")
                                 st.write("**Ground Truth Distribution:**")
                                 st.write(y_true.value_counts())
                                 st.write("")
                                 st.write("**Prediction Distribution:**")
                                 st.write(y_pred.value_counts())
-                                st.write("")
-                                st.write("**Confusion Matrix:**")
-                                from sklearn.metrics import confusion_matrix
-                                cm = confusion_matrix(y_true, y_pred)
-                                st.write(f"True Negatives: {cm[0,0]}, False Positives: {cm[0,1]}")
-                                st.write(f"False Negatives: {cm[1,0]}, True Positives: {cm[1,1]}")
                                 st.write("")
                                 st.write("**Sample Predictions vs Ground Truth (first 20):**")
                                 comparison_df = pd.DataFrame({
@@ -1875,7 +1914,7 @@ TRANSFER   → 4  (Fifth - Alphabetically last)
                                     'Prediction': y_pred.head(20),
                                     'Match': (y_true.head(20) == y_pred.head(20)).map({True: '✅', False: '❌'})
                                 })
-                                st.dataframe(comparison_df)
+                                st.dataframe(comparison_df, use_container_width=True)
                         
                         st.markdown("---")
                         
@@ -1938,18 +1977,32 @@ TRANSFER   → 4  (Fifth - Alphabetically last)
                                 if col in df_priority.columns:
                                     display_cols.append(col)
                             
-                            # Color code by risk
+                            # Enhanced styling for better readability
                             def highlight_risk(row):
                                 if row['Risk_Level'] == 'CRITICAL':
-                                    return ['background-color: #f8d7da'] * len(row)
+                                    # Dark red background with white text
+                                    return ['background-color: #DC2626; color: white; font-weight: bold'] * len(row)
                                 elif row['Risk_Level'] == 'HIGH':
-                                    return ['background-color: #fff3cd'] * len(row)
+                                    # Orange background with dark text
+                                    return ['background-color: #FCD34D; color: #1F2937; font-weight: 600'] * len(row)
+                                elif row['Risk_Level'] == 'MEDIUM':
+                                    # Yellow background
+                                    return ['background-color: #FEF3C7; color: #1F2937'] * len(row)
                                 else:
-                                    return [''] * len(row)
+                                    # Light background
+                                    return ['background-color: #F3F4F6; color: #1F2937'] * len(row)
+                            
+                            # Format amount columns for better readability
+                            styled_df = df_priority[display_cols].style.apply(highlight_risk, axis=1)
+                            
+                            # Format currency columns if they exist
+                            currency_cols = [col for col in ['amount', 'oldbalanceOrg', 'newbalanceOrig', 'oldbalanceDest', 'newbalanceDest'] if col in display_cols]
+                            if currency_cols:
+                                styled_df = styled_df.format({col: 'Rp {:,.0f}' for col in currency_cols})
                             
                             st.dataframe(
-                                df_priority[display_cols].style.apply(highlight_risk, axis=1),
-                                height=400,
+                                styled_df,
+                                height=500,
                                 use_container_width=True
                             )
                             
