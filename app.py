@@ -1,4 +1,4 @@
-# @Author:xxx
+﻿# @Author:xxx
 # @Date:2025-11-10 08:02:50
 # @LastModifiedBy:xxx
 # @Last Modified time:2025-11-10 08:02:50
@@ -947,11 +947,13 @@ if page == '📊 Dashboard & Model Performance':
             gridwidth=1,
             gridcolor='#E5E7EB'
         )
-        )
-        
-        st.plotly_chart(fig, width="stretch")
-        
-        st.markdown("<div style='margin: 2rem 0;'></div>", unsafe_allow_html=True)    # Insights Section
+    )
+
+    st.plotly_chart(fig, width="stretch")
+
+    st.markdown("<div style='margin: 2rem 0;'></div>", unsafe_allow_html=True)
+
+    # Insights Section
     st.markdown("""
     <div style='background: linear-gradient(135deg, #FEF3C7 0%, #FDE68A 100%); padding: 1.5rem; border-radius: 12px; border-left: 5px solid #F59E0B;'>
         <h3 style='color: #92400E; margin: 0;'>💡 Key Insights & Strategic Recommendations</h3>
