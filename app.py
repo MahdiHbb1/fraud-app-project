@@ -1,11 +1,23 @@
 ﻿# @Author:xxx
 # @Date:2025-11-10 08:02:50
-# @LastModifiedBy:xxx
-# @Last Modified time:2025-11-19 16:17:13
+# @LastModifiedBy:GitHub Copilot (Production Refactor)
+# @Last Modified time:2025-01-XX XX:XX:XX
 # -*- coding: utf-8 -*-
 """
-APLIKASI WEB DETEKSI FRAUD v3.0 - ENHANCED EDITION
-Sistem Deteksi Fraud Perbankan dengan Fitur Enterprise
+BANKING FRAUD DETECTION SYSTEM v3.0 - PRODUCTION EDITION
+Enterprise-Grade Fraud Detection with 85%+ Accuracy Target
+
+CRITICAL UPDATE: Production Pipeline Refactor
+- Separation of Display View (human-readable text) vs Model View (pure numbers)
+- Strict alphabetical label encoding (sklearn LabelEncoder standard)
+- Enhanced feature engineering (errorBalance calculations)
+- Comprehensive validation and debug views
+- Executive dashboard with financial impact metrics
+- Model performance tracking when ground truth available
+
+Encoding Standard (CRITICAL - DO NOT CHANGE):
+  CASH_IN: 0, CASH_OUT: 1, DEBIT: 2, PAYMENT: 3, TRANSFER: 4
+  (Alphabetical order matching sklearn.preprocessing.LabelEncoder)
 """
 
 import streamlit as st
@@ -661,91 +673,92 @@ def preprocess_data_form(df: pd.DataFrame, le_type, le_amount_cat, scaler, featu
 # ==============================================================================
 # SMART COLUMN MAPPING & CLEANING FUNCTION
 # ==============================================================================
-def clean_and_prepare_data(df):
+def clean_and_prepare_data(df_input):
     """
-    Unified pipeline: Standardizes columns, handles Type mapping, and adds Feature Engineering.
+    Universal preprocessing pipeline for fraud detection.
+    Converts human-readable data into machine-learning-ready numerical format.
     
-    This function:
-    1. Maps various column naming conventions to standard names
-    2. Performs feature engineering (error balances)
-    3. Converts transaction types to integers
-    4. Returns a clean dataframe ready for model prediction
+    CRITICAL: This function creates the "Model View" (pure numbers).
+    The original dataframe remains unchanged for display purposes.
+    
+    Pipeline:
+    1. Smart column mapping (handles multiple naming conventions)
+    2. Force numeric types for all calculation columns
+    3. Feature engineering (errorBalance - key fraud indicator)
+    4. Strict alphabetical label encoding (sklearn standard)
     
     Args:
-        df: Raw pandas DataFrame from uploaded CSV/Excel
+        df_input: Raw DataFrame from CSV/Excel (the "Display View")
         
     Returns:
-        Cleaned pandas DataFrame with engineered features
+        df_model: Clean numerical DataFrame ready for ML model (the "Model View")
     """
-    df = df.copy()
+    # Working on a copy for the MODEL (Numerical)
+    df_model = df_input.copy()
     
-    # 1. Smart Column Mapping (Handle various naming conventions including Indonesian)
+    # 1. Smart Column Mapping (Case Insensitive, Multi-language)
     col_map = {
         'step': ['step', 'Step', 'STEP', 'time', 'Time'],
         'type': ['type', 'Type', 'TYPE', 'Transaction Type', 'Tipe', 'Jenis'],
         'amount': ['amount', 'Amount', 'AMOUNT', 'Nilai', 'Nominal', 'Jumlah'],
-        'nameOrig': ['nameOrig', 'NameOrig', 'Customer', 'Pengirim', 'nameOrigin', 'origin'],
+        'nameOrig': ['nameOrig', 'NameOrig', 'Customer', 'Pengirim', 'origin'],
         'oldbalanceOrg': ['oldbalanceOrg', 'OldBalanceOrg', 'OldBal Org', 'SaldoAwal', 'oldBalanceOrig'],
         'newbalanceOrig': ['newbalanceOrig', 'NewBalanceOrig', 'NewBal Orig', 'SaldoAkhir', 'newBalanceOrig'],
-        'nameDest': ['nameDest', 'NameDest', 'Recipient', 'Penerima', 'nameDestination', 'destination'],
+        'nameDest': ['nameDest', 'NameDest', 'Recipient', 'Penerima', 'destination'],
         'oldbalanceDest': ['oldbalanceDest', 'OldBalanceDest', 'OldBal Dest', 'SaldoAwalTujuan'],
         'newbalanceDest': ['newbalanceDest', 'NewBalanceDest', 'NewBal Dest', 'SaldoAkhirTujuan'],
-        'isFraud': ['isFraud', 'IsFraud', 'fraud', 'Fraud', 'is_fraud', 'class']
+        'isFraud': ['isFraud', 'IsFraud', 'Fraud', 'fraud', 'is_fraud']
     }
     
-    # Rename columns based on map
     found_cols = {}
     for target, variants in col_map.items():
         for v in variants:
-            if v in df.columns:
+            if v in df_model.columns:
                 found_cols[v] = target
                 break
-    df = df.rename(columns=found_cols)
+    df_model = df_model.rename(columns=found_cols)
     
-    # 2. Ensure numeric types for calculation columns
+    # 2. Force Numeric Types (Handle dirty data from Excel/CSV)
     num_cols = ['step', 'amount', 'oldbalanceOrg', 'newbalanceOrig', 'oldbalanceDest', 'newbalanceDest']
     for c in num_cols:
-        if c in df.columns:
-            df[c] = pd.to_numeric(df[c], errors='coerce').fillna(0)
+        if c in df_model.columns:
+            df_model[c] = pd.to_numeric(df_model[c], errors='coerce').fillna(0)
     
-    # 3. Feature Engineering (CRITICAL for Model Accuracy)
-    # Calculate Error Balances - captures discrepancies in transaction flow
-    # These features are key fraud indicators
-    if all(col in df.columns for col in ['newbalanceOrig', 'amount', 'oldbalanceOrg']):
-        df['errorBalanceOrig'] = df['newbalanceOrig'] + df['amount'] - df['oldbalanceOrg']
+    # 3. Feature Engineering: ErrorBalance (CRITICAL FOR ACCURACY)
+    # These features detect if money "disappeared" or appeared unexpectedly
+    # High errorBalance values are strong fraud indicators
+    if all(col in df_model.columns for col in ['newbalanceOrig', 'amount', 'oldbalanceOrg']):
+        # errorBalanceOrig: Difference between expected and actual balance change
+        # Formula: newBalance + amount - oldBalance (should be ≈0 for legitimate transactions)
+        df_model['errorBalanceOrig'] = df_model['newbalanceOrig'] + df_model['amount'] - df_model['oldbalanceOrg']
     else:
-        df['errorBalanceOrig'] = 0
+        df_model['errorBalanceOrig'] = 0
     
-    if all(col in df.columns for col in ['oldbalanceDest', 'amount', 'newbalanceDest']):
-        df['errorBalanceDest'] = df['oldbalanceDest'] + df['amount'] - df['newbalanceDest']
+    if all(col in df_model.columns for col in ['oldbalanceDest', 'amount', 'newbalanceDest']):
+        # errorBalanceDest: Same logic for destination account
+        df_model['errorBalanceDest'] = df_model['oldbalanceDest'] + df_model['amount'] - df_model['newbalanceDest']
     else:
-        df['errorBalanceDest'] = 0
+        df_model['errorBalanceDest'] = 0
     
-    # 4. ALPHABETICAL LABEL ENCODING (CRITICAL - Must match sklearn LabelEncoder)
-    # This matches sklearn.preprocessing.LabelEncoder default behavior (alphabetical sorting)
-    # CRITICAL: Type encoding MUST match training phase:
-    #   CASH_IN: 0, CASH_OUT: 1, DEBIT: 2, PAYMENT: 3, TRANSFER: 4
-    if 'type' in df.columns:
-        if df['type'].dtype == 'object':
-            # Standard alphabetical encoding (sklearn default)
-            type_map = {
-                'CASH_IN': 0,      # Alphabetically first
-                'CASH_OUT': 1,     # Second
-                'DEBIT': 2,        # Third
-                'PAYMENT': 3,      # Fourth
-                'TRANSFER': 4      # Fifth
-            }
-            
-            # Convert to uppercase for case-insensitive matching
-            df['type'] = df['type'].str.upper().str.strip()
-            
-            # Map with safe default (PAYMENT=3 is most common transaction type)
-            df['type'] = df['type'].map(type_map).fillna(3).astype(int)
-        else:
-            # Already numeric, ensure integer type
-            df['type'] = df['type'].fillna(3).astype(int)
+    # 4. Strict Alphabetical Label Encoding (The Industry Standard)
+    # This MUST match sklearn's LabelEncoder behavior (alphabetical sorting)
+    # CASH_IN=0, CASH_OUT=1, DEBIT=2, PAYMENT=3, TRANSFER=4
+    if 'type' in df_model.columns:
+        # Ensure it's string first before mapping
+        df_model['type'] = df_model['type'].astype(str).str.upper().str.strip()
+        
+        type_map = {
+            'CASH_IN': 0,      # A (alphabetically first)
+            'CASH_OUT': 1,     # C
+            'DEBIT': 2,        # D
+            'PAYMENT': 3,      # P
+            'TRANSFER': 4      # T (alphabetically last)
+        }
+        
+        # Map known types, default unknown to 3 (PAYMENT - most common, safest default)
+        df_model['type'] = df_model['type'].map(type_map).fillna(3).astype(int)
     
-    return df
+    return df_model
 
 def preprocess_data_mapped(df_mapped: pd.DataFrame, le_type, le_amount_cat, scaler, feature_columns) -> Tuple[Optional[np.ndarray], Optional[pd.DataFrame]]:
     """Enhanced preprocessing for batch data with anomaly detection"""
