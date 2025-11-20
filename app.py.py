@@ -2287,5 +2287,4 @@ with col3:
     st.caption("Mahdi • Ibnu • Brian • Anya")
 
 st.divider()
-st.caption("© 2024 Enterprise Banking Solutions | 🟢 System Operational")
 st.caption("© 2025 Enterprise Banking Solutions | 🟢 System Status: Operational")
